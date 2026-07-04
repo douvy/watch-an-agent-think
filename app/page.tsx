@@ -4,6 +4,8 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 md:px-6 md:py-16">
       <header className="mb-8">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pixel SVG, no optimization wanted */}
+        <img src="/icon.svg" alt="" width={40} height={40} className="mb-4" />
         <p className="label mb-3">interactive explainer</p>
         <h1 className="mb-3 text-3xl font-semibold tracking-tight text-header-text md:text-4xl">
           Watch an AI agent think

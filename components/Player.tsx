@@ -297,11 +297,36 @@ export function Player() {
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
 
+  // Deep link in: ?s=2&t=34 lands on that scenario at that second, then plays.
   // Auto-play on load — the share loop lands on a page already thinking.
+  // URL params only exist client-side; a lazy initializer would mismatch
+  // hydration, so this must be a mount effect.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const t = setTimeout(() => setPlaying(true), 400);
-    return () => clearTimeout(t);
+    const p = new URLSearchParams(window.location.search);
+    const s = Number(p.get("s"));
+    const si = s >= 1 && s <= scenarios.length ? s - 1 : 0;
+    if (si) setIdx(si);
+    const t = Number(p.get("t"));
+    if (t > 0) setMs(Math.min(t * 1000, scenarios[si].durationMs));
+    const timer = setTimeout(() => setPlaying(true), 400);
+    return () => clearTimeout(timer);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Deep link out: while paused, the URL captures the frame you're looking at.
+  // Debounced — Safari throttles replaceState.
+  useEffect(() => {
+    if (playing) return;
+    const timer = setTimeout(() => {
+      const url =
+        ms > 0
+          ? `?s=${idx + 1}&t=${(ms / 1000).toFixed(1)}`
+          : window.location.pathname;
+      history.replaceState(null, "", url);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [playing, ms, idx]);
 
   // Playback clock — rAF advances ms; everything else derives from it.
   useEffect(() => {
