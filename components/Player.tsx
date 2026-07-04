@@ -19,7 +19,21 @@ import {
   CONTEXT_BUDGET,
   type Block,
   type PlanView,
+  type Scenario,
 } from "@/lib/timeline";
+
+// Chapters derive from the script — the beats worth jumping to.
+function chaptersOf(scenario: Scenario): { at: number; label: string }[] {
+  const out: { at: number; label: string }[] = [];
+  for (const e of scenario.events) {
+    if (e.type === "plan") out.push({ at: e.at, label: out.length ? "replan" : "plan" });
+    else if (e.type === "plan_dead") out.push({ at: e.at, label: "plan dies" });
+    else if (e.type === "compact") out.push({ at: e.at, label: "compact" });
+    else if (e.type === "tool_result" && !e.ok) out.push({ at: e.at, label: "setback" });
+    else if (e.type === "done") out.push({ at: e.at, label: "done" });
+  }
+  return out;
+}
 
 const TOOL_ICONS: Record<string, typeof Terminal> = {
   bash: Terminal,
@@ -279,8 +293,15 @@ export function Player() {
   const [playing, setPlaying] = useState(false);
   const scenario = scenarios[idx];
   const state = useMemo(() => stateAt(scenario, ms), [scenario, ms]);
+  const chapters = useMemo(() => chaptersOf(scenario), [scenario]);
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
+
+  // Auto-play on load — the share loop lands on a page already thinking.
+  useEffect(() => {
+    const t = setTimeout(() => setPlaying(true), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   // Playback clock — rAF advances ms; everything else derives from it.
   useEffect(() => {
@@ -388,7 +409,7 @@ export function Player() {
 
         <div className="grid md:grid-cols-[260px_1fr_200px] md:divide-x md:divide-[#252525] max-md:divide-y max-md:divide-[#252525]">
           {/* Mind */}
-          <section className="min-h-[200px] p-4 md:min-h-[440px]">
+          <section className="min-h-[160px] p-4 max-md:order-1 md:min-h-[440px]">
             <div className="label mb-4">mind</div>
             <div className="space-y-5">
               {state.plans.map((plan, i) => (
@@ -408,7 +429,7 @@ export function Player() {
           {/* Action stream */}
           <section
             ref={streamRef}
-            className="max-h-[320px] min-h-[240px] overflow-y-auto p-4 md:max-h-[440px] md:min-h-[440px]"
+            className="max-h-[300px] min-h-[200px] overflow-y-auto p-4 max-md:order-3 md:max-h-[440px] md:min-h-[440px]"
           >
             <div className="label mb-4">action stream</div>
             <div className="space-y-3">
@@ -421,20 +442,22 @@ export function Player() {
             </div>
           </section>
 
-          {/* Context gauge */}
-          <section className="p-4">
-            <div className="label mb-4">context</div>
-            <div className="font-mono text-[26px] leading-none text-header-text">
-              {displayTokens.toLocaleString()}
-            </div>
-            <div className="mt-1 font-mono text-[11px] text-[#5c6070]">
-              / {CONTEXT_BUDGET.toLocaleString()} tokens
-            </div>
-            <div className="mt-3 h-1 w-full bg-hover-bg">
-              <div className={`h-full ${gaugeColor}`} style={{ width: `${pct * 100}%` }} />
-            </div>
-            <div className="mt-2 font-mono text-[11px] text-muted">
-              {Math.round(pct * 100)}%
+          {/* Context gauge — vertical panel on desktop, slim strip on mobile */}
+          <section className="p-3 max-md:order-2 md:p-4">
+            <div className="flex items-center gap-3 md:block">
+              <div className="label md:mb-4">context</div>
+              <div className="font-mono text-[15px] leading-none text-header-text md:text-[26px]">
+                {displayTokens.toLocaleString()}
+              </div>
+              <div className="font-mono text-[10px] text-[#5c6070] md:mt-1 md:text-[11px]">
+                / {CONTEXT_BUDGET.toLocaleString()}
+              </div>
+              <div className="h-1 flex-1 bg-hover-bg md:mt-3 md:w-full md:flex-none">
+                <div className={`h-full ${gaugeColor}`} style={{ width: `${pct * 100}%` }} />
+              </div>
+              <div className="font-mono text-[10px] text-muted md:mt-2 md:text-[11px]">
+                {Math.round(pct * 100)}%
+              </div>
             </div>
           </section>
         </div>
@@ -470,6 +493,31 @@ export function Player() {
           <kbd className="hidden h-4 items-center border border-border px-1 font-mono text-[9px] text-[#5c6070] md:inline-flex">
             space
           </kbd>
+        </div>
+
+        {/* Chapters */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2">
+          {chapters.map((ch, i) => {
+            const next = chapters[i + 1]?.at ?? Infinity;
+            const active = ms >= ch.at && ms < next;
+            return (
+              <button
+                key={`${ch.at}-${ch.label}`}
+                onClick={() => {
+                  setMs(ch.at);
+                  setPlaying(true);
+                }}
+                className={`flex items-center gap-1.5 py-1 font-mono text-[10px] tracking-wide uppercase ${
+                  active ? "text-header-text" : "text-[#5c6070] hover:text-muted"
+                }`}
+              >
+                <span className={active ? "text-accent" : ""}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {ch.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
