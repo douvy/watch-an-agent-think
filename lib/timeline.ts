@@ -31,16 +31,21 @@ export interface Scenario {
 
 export type StepStatus = "pending" | "active" | "done";
 
+// Views carry the timestamps of the transitions that produced them, so all
+// motion can be computed as a pure function of (ms - timestamp) through the
+// spring solver. Play and scrub render through the identical path.
+
 export interface PlanView {
   planId: string;
+  at: number;
   steps: string[];
   status: StepStatus[];
-  dead: boolean;
+  deadAt?: number;
   deadReason?: string;
 }
 
 export type Block =
-  | { kind: "thought"; at: number; text: string; absorbed: boolean }
+  | { kind: "thought"; at: number; text: string; absorbedAt?: number }
   | {
       kind: "tool";
       at: number;
@@ -48,9 +53,10 @@ export type Block =
       tool: string;
       input: string;
       pending: boolean;
+      resultAt?: number;
       ok?: boolean;
       output?: string;
-      absorbed: boolean;
+      absorbedAt?: number;
     }
   | { kind: "compact"; at: number; summary: string }
   | { kind: "done"; at: number; verdict: string };
@@ -58,8 +64,11 @@ export type Block =
 export interface TimelineState {
   plans: PlanView[];
   blocks: Block[];
-  /** Step function: tokensAfter of the last fired event. Springs smooth it in play mode. */
+  /** tokensAfter of the last fired event (step function — spring-smoothed for display). */
   tokens: number;
+  /** tokens before the last fired event, for interpolating the gauge. */
+  tokensPrev: number;
+  lastEventAt: number;
   done: string | null;
   lastEventIndex: number;
 }
@@ -68,6 +77,8 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
   const plans: PlanView[] = [];
   const blocks: Block[] = [];
   let tokens = 0;
+  let tokensPrev = 0;
+  let lastEventAt = 0;
   let done: string | null = null;
   let lastEventIndex = -1;
 
@@ -75,15 +86,17 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
     const e = scenario.events[i];
     if (e.at > ms) break;
     lastEventIndex = i;
+    tokensPrev = tokens;
     tokens = e.tokensAfter;
+    lastEventAt = e.at;
 
     switch (e.type) {
       case "plan":
         plans.push({
           planId: e.planId,
+          at: e.at,
           steps: e.steps,
           status: e.steps.map(() => "pending"),
-          dead: false,
         });
         break;
       case "step_active":
@@ -93,7 +106,7 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
         break;
       }
       case "thought":
-        blocks.push({ kind: "thought", at: e.at, text: e.text, absorbed: false });
+        blocks.push({ kind: "thought", at: e.at, text: e.text });
         break;
       case "tool_call":
         blocks.push({
@@ -103,13 +116,13 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
           tool: e.tool,
           input: e.input,
           pending: true,
-          absorbed: false,
         });
         break;
       case "tool_result": {
         const call = blocks.find((b) => b.kind === "tool" && b.id === e.callId);
         if (call && call.kind === "tool") {
           call.pending = false;
+          call.resultAt = e.at;
           call.ok = e.ok;
           call.output = e.output;
         }
@@ -118,14 +131,16 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
       case "plan_dead": {
         const plan = plans.find((p) => p.planId === e.planId);
         if (plan) {
-          plan.dead = true;
+          plan.deadAt = e.at;
           plan.deadReason = e.reason;
         }
         break;
       }
       case "compact":
         for (const b of blocks) {
-          if (b.kind === "thought" || b.kind === "tool") b.absorbed = true;
+          if ((b.kind === "thought" || b.kind === "tool") && b.absorbedAt === undefined) {
+            b.absorbedAt = e.at;
+          }
         }
         blocks.push({ kind: "compact", at: e.at, summary: e.summary });
         break;
@@ -136,5 +151,5 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
     }
   }
 
-  return { plans, blocks, tokens, done, lastEventIndex };
+  return { plans, blocks, tokens, tokensPrev, lastEventAt, done, lastEventIndex };
 }

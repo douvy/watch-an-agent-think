@@ -30,13 +30,13 @@ test("pending tool call before its result arrives", () => {
 test("recovery: plan A dies, plan B replaces it", () => {
   const before = stateAt(recovery, 24000);
   assert.equal(before.plans.length, 1);
-  assert.equal(before.plans[0].dead, false);
+  assert.equal(before.plans[0].deadAt, undefined);
 
   const after = stateAt(recovery, 28000);
   assert.equal(after.plans.length, 2);
-  assert.equal(after.plans[0].dead, true);
+  assert.equal(after.plans[0].deadAt, 24500);
   assert.equal(after.plans[0].deadReason, "built on a misread symptom");
-  assert.equal(after.plans[1].dead, false);
+  assert.equal(after.plans[1].deadAt, undefined);
 });
 
 test("recovery: ends done with verdict", () => {
@@ -50,16 +50,19 @@ test("pressure: compaction absorbs prior blocks and drops tokens", () => {
   assert.equal(before.tokens, 6800);
   assert.ok(
     before.blocks.every(
-      (b) => (b.kind !== "thought" && b.kind !== "tool") || !b.absorbed,
+      (b) =>
+        (b.kind !== "thought" && b.kind !== "tool") || b.absorbedAt === undefined,
     ),
   );
 
   const after = stateAt(pressure, 30000);
   assert.equal(after.tokens, 1900);
+  assert.equal(after.tokensPrev, 6800);
   const compactBlock = after.blocks.find((b) => b.kind === "compact");
   assert.ok(compactBlock);
   const live = after.blocks.filter(
-    (b) => (b.kind === "thought" || b.kind === "tool") && !b.absorbed,
+    (b) =>
+      (b.kind === "thought" || b.kind === "tool") && b.absorbedAt === undefined,
   );
   assert.equal(live.length, 0);
 });
