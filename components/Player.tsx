@@ -13,6 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { scenarios } from "@/data";
+import { Creature } from "@/components/Creature";
 import { createSpring, presets } from "@/lib/spring";
 import {
   stateAt,
@@ -399,17 +400,20 @@ export function Player() {
   return (
     <div className="w-full">
       {/* Scenario tabs */}
-      <div className="flex items-center gap-1 border-x border-t border-border">
+      <div className="flex items-stretch border-x border-t border-border bg-background">
         {scenarios.map((sc, i) => (
           <button
             key={sc.id}
             onClick={() => select(i)}
-            className={`flex items-center gap-2 px-4 py-2.5 font-mono text-[11px] tracking-wide uppercase transition-colors ${
+            className={`relative flex items-center gap-2 border-r border-border px-4 py-2.5 font-mono text-[11px] tracking-wide uppercase transition-colors ${
               i === idx
-                ? "text-header-text"
+                ? "bg-surface text-header-text"
                 : "text-[#5c6070] hover:bg-hover-bg hover:text-muted"
             }`}
           >
+            {i === idx && (
+              <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-accent" />
+            )}
             <kbd
               className={`inline-flex h-4 w-4 items-center justify-center border text-[9px] ${
                 i === idx ? "border-accent/50 text-accent" : "border-border text-[#5c6070]"
@@ -423,20 +427,33 @@ export function Player() {
       </div>
 
       {/* Player shell */}
-      <div className="relative border border-border">
+      <div className="relative border border-border bg-background">
         <Corners />
 
-        {/* Task bar */}
-        <div className="border-b border-border px-4 py-3">
-          <span className="label mr-3">task</span>
-          <span className="font-mono text-[13px] text-header-text">{scenario.task}</span>
+        {/* Task bar — the creature is the agent; its face derives from (state, ms) */}
+        <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+          <Creature state={state} ms={ms} />
+          <span className="label">task</span>
+          <span className="truncate font-mono text-[13px] text-header-text">
+            {scenario.task}
+          </span>
+          <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-[#5c6070] md:block">
+            {(scenario.durationMs / 1000).toFixed(0)}s · {scenario.events.length} events
+          </span>
         </div>
 
         <div className="grid md:grid-cols-[260px_1fr_200px] md:divide-x md:divide-[#252525] max-md:divide-y max-md:divide-[#252525]">
           {/* Mind */}
-          <section className="min-h-[160px] p-4 max-md:order-1 md:min-h-[440px]">
-            <div className="label mb-4">mind</div>
-            <div className="space-y-5">
+          <section className="flex flex-col max-md:order-1">
+            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+              <span className="label">mind</span>
+              <span className="font-mono text-[10px] text-[#5c6070]">
+                {state.plans.length === 0
+                  ? "—"
+                  : `${state.plans.length} plan${state.plans.length > 1 ? "s" : ""}`}
+              </span>
+            </div>
+            <div className="min-h-[140px] flex-1 space-y-5 p-4 md:min-h-[400px]">
               {state.plans.map((plan, i) => (
                 <Plan
                   key={plan.planId}
@@ -452,12 +469,17 @@ export function Player() {
           </section>
 
           {/* Action stream */}
-          <section
-            ref={streamRef}
-            className="max-h-[300px] min-h-[200px] overflow-y-auto p-4 max-md:order-3 md:max-h-[440px] md:min-h-[440px]"
-          >
-            <div className="label mb-4">action stream</div>
-            <div className="space-y-3">
+          <section className="flex flex-col max-md:order-3">
+            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+              <span className="label">action stream</span>
+              <span className="font-mono text-[10px] text-[#5c6070]">
+                {state.lastEventIndex + 1}/{scenario.events.length} events
+              </span>
+            </div>
+            <div
+              ref={streamRef}
+              className="max-h-[300px] min-h-[180px] space-y-3 overflow-y-auto p-4 md:max-h-[400px] md:min-h-[400px]"
+            >
               {state.blocks.map((b, i) => (
                 <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} />
               ))}
@@ -467,21 +489,23 @@ export function Player() {
             </div>
           </section>
 
-          {/* Context gauge — vertical panel on desktop, slim strip on mobile */}
-          <section className="p-3 max-md:order-2 md:p-4">
-            <div className="flex items-center gap-3 md:block">
-              <div className="label md:mb-4">context</div>
+          {/* Context gauge — stats cell */}
+          <section className="flex flex-col max-md:order-2">
+            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+              <span className="label">context</span>
+              <span className="font-mono text-[10px] text-[#5c6070]">
+                {Math.round(pct * 100)}%
+              </span>
+            </div>
+            <div className="flex items-center gap-3 p-4 max-md:py-2.5 md:block">
               <div className="font-mono text-[15px] leading-none text-header-text md:text-[26px]">
                 {displayTokens.toLocaleString()}
               </div>
               <div className="font-mono text-[10px] text-[#5c6070] md:mt-1 md:text-[11px]">
-                / {CONTEXT_BUDGET.toLocaleString()}
+                / {CONTEXT_BUDGET.toLocaleString()} tokens
               </div>
               <div className="h-1 flex-1 bg-hover-bg md:mt-3 md:w-full md:flex-none">
                 <div className={`h-full ${gaugeColor}`} style={{ width: `${pct * 100}%` }} />
-              </div>
-              <div className="font-mono text-[10px] text-muted md:mt-2 md:text-[11px]">
-                {Math.round(pct * 100)}%
               </div>
             </div>
           </section>

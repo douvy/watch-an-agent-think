@@ -45,6 +45,16 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Steady numerals — timers and gauges don't jitter */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Blueprint grid — the drafting table everything sits on. Static, no motion. */
+.blueprint {
+  background-image:
+    linear-gradient(to right, #0d0d0d 1px, transparent 1px),
+    linear-gradient(to bottom, #0d0d0d 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 /* Fix mobile touch delays */
