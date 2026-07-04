@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Design tokens ported from pokeport — the house style.
+   Dark only. All motion goes through lib/spring.ts — no CSS easing. */
+
+:root {
+  --background: #000000;
+  --foreground: #b8bdc7;
+  --surface: #0a0a0a;
+  --border: #252525;
+  --accent: #22c55e;
+  --accent-subtle: #22c55e50;
+  --accent-negative: #ef4444;
+  --warning: #f59e0b;
+  --muted: #8b8b95;
+  --header-text: #fbfbfb;
+  --hover-bg: #151515;
+  --link-color: #62a5ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-negative: var(--accent-negative);
+  --color-warning: var(--warning);
+  --color-muted: var(--muted);
+  --color-header-text: var(--header-text);
+  --color-hover-bg: var(--hover-bg);
+  --color-link: var(--link-color);
+
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+html {
+  /* Reserve scrollbar space so overlays locking body scroll don't shift the page */
+  scrollbar-gutter: stable;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fix mobile touch delays */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"],
+a {
+  touch-action: manipulation;
+}
+
+/* House label style: tiny uppercase captions */
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5c6070;
+}
