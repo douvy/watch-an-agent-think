@@ -1,0 +1,52 @@
+import type { Scenario } from "@/lib/timeline";
+
+// Scenario 1 — The Loop. Teaches think → act → observe → repeat.
+// Honest-search edit: agent reads the test before the source — no psychic debugging.
+
+export const loop: Scenario = {
+  id: "loop",
+  title: "The Loop",
+  task: "Tests are failing in utils.test.ts — find out why and fix it.",
+  lesson: "think → act → observe → repeat",
+  durationMs: 40000,
+  events: [
+    { at: 0, tokensAfter: 600, type: "plan", planId: "p1", steps: [
+      "Run the tests",
+      "Read the failing test",
+      "Find the bug",
+      "Fix it",
+      "Verify green",
+    ]},
+    { at: 1500, tokensAfter: 610, type: "step_active", planId: "p1", step: 0 },
+    { at: 2500, tokensAfter: 650, type: "tool_call", id: "t1", tool: "bash", input: "npm test" },
+    { at: 5000, tokensAfter: 1250, type: "tool_result", callId: "t1", ok: false,
+      output: "FAIL utils.test.ts — formatDate: expected 'Mar 14, 2024', got 'NaN-NaN-NaN'" },
+    { at: 6000, tokensAfter: 1260, type: "step_done", planId: "p1", step: 0 },
+    { at: 6500, tokensAfter: 1270, type: "step_active", planId: "p1", step: 1 },
+    { at: 7500, tokensAfter: 1310, type: "thought",
+      text: "One failure. What does the test actually expect?" },
+    { at: 9000, tokensAfter: 1350, type: "tool_call", id: "t2", tool: "read", input: "utils.test.ts" },
+    { at: 11500, tokensAfter: 2000, type: "tool_result", callId: "t2", ok: true,
+      output: "expect(formatDate('2024-03-14')).toBe('Mar 14, 2024') — input is an ISO string" },
+    { at: 13000, tokensAfter: 2010, type: "step_done", planId: "p1", step: 1 },
+    { at: 13500, tokensAfter: 2020, type: "step_active", planId: "p1", step: 2 },
+    { at: 14500, tokensAfter: 2060, type: "thought",
+      text: "The test passes an ISO string. Now read the implementation." },
+    { at: 16000, tokensAfter: 2100, type: "tool_call", id: "t3", tool: "read", input: "lib/utils.ts" },
+    { at: 18500, tokensAfter: 2650, type: "tool_result", callId: "t3", ok: true,
+      output: "return new Date(str.replace(/-/g, '/')) — manual string surgery before parsing" },
+    { at: 21000, tokensAfter: 2700, type: "thought",
+      text: "There it is. The replace mangles ISO dates — Date parses them natively." },
+    { at: 22500, tokensAfter: 2710, type: "step_done", planId: "p1", step: 2 },
+    { at: 23000, tokensAfter: 2720, type: "step_active", planId: "p1", step: 3 },
+    { at: 24000, tokensAfter: 2760, type: "tool_call", id: "t4", tool: "edit",
+      input: "lib/utils.ts — drop the replace, parse the string directly" },
+    { at: 26500, tokensAfter: 2850, type: "tool_result", callId: "t4", ok: true, output: "1 file changed" },
+    { at: 27500, tokensAfter: 2860, type: "step_done", planId: "p1", step: 3 },
+    { at: 28000, tokensAfter: 2870, type: "step_active", planId: "p1", step: 4 },
+    { at: 29000, tokensAfter: 2910, type: "tool_call", id: "t5", tool: "bash", input: "npm test" },
+    { at: 32500, tokensAfter: 3150, type: "tool_result", callId: "t5", ok: true, output: "12 passed, 0 failed" },
+    { at: 34000, tokensAfter: 3160, type: "step_done", planId: "p1", step: 4 },
+    { at: 36000, tokensAfter: 3200, type: "done", verdict: "think → act → observe → repeat" },
+  ],
+};

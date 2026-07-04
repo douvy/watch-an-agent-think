@@ -34,14 +34,16 @@ static site, shipped at hour 10. Footer: "Design engineer. I make AI comprehensi
 - [x] Spring solver secured: `lib/spring.ts` + `lib/spring.test.ts`, 5/5 passing (`npm test`)
 - [x] Scaffold: copied zed-next-app, ported pokeport design tokens, stripped
       framer-motion / radix / cva / old components
-- [ ] git init + initial commit, push to GitHub
-- [ ] Draft the three scenario scripts as typed JSON (other model drafts, you edit, I pressure-test)
-- [ ] Reference folder: Zed screenshots, bbycroft.net/llm as quality bar
+- [x] git init + initial commit, pushed: github.com/douvy/watch-an-agent-think
+- [x] Three scenario scripts drafted, reviewed by second model, five line-level
+      edits applied, typed in `data/*.ts` (schema in `lib/timeline.ts`)
+- [x] Reference folder: 7 Zed screenshots in `reference/`, synthesis in
+      `docs/design.md` (pokeport palette is law, Zed structure wins)
 - [ ] Kill-switch check before sleep: scripts exciting? If not → spring playground fallback
 
 ### H1–2 — Schema + shell + static scenario 1
 - [ ] `lib/timeline.ts`: event types + `stateAt(script, ms)` — pure, tested
-- [ ] Scenario scripts in `data/*.ts`, typed
+- [x] Scenario scripts in `data/*.ts`, typed (done in H0)
 - [ ] Page shell: three panels + tabs + footer, token classes only
 - [ ] Scenario 1 renders fully from its JSON at 1440px and 390px
 - [ ] **Gate: screenshots of both widths. Stop-loss: 15 turns.**
