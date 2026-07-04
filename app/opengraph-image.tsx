@@ -28,7 +28,7 @@ function Corner({ style }: { style: React.CSSProperties }) {
     <span
       style={{
         position: "absolute",
-        color: "#3d3d3d",
+        color: "#4d525e",
         fontSize: 22,
         lineHeight: 1,
         ...style,
@@ -63,7 +63,7 @@ export default async function OpengraphImage() {
             display: "flex",
             flexDirection: "column",
             position: "relative",
-            border: "1px solid #252525",
+            border: "1px solid #474b56",
             padding: "48px 56px",
           }}
         >
@@ -91,11 +91,11 @@ export default async function OpengraphImage() {
                 <rect x="12" y="12" width="2" height="1" />
               </g>
               <rect x="3" y="5" width="10" height="4" fill="#555b68" />
-              <rect x="5" y="6" width="2" height="2" fill="#22c55e" />
-              <rect x="9" y="6" width="2" height="2" fill="#22c55e" />
+              <rect x="5" y="6" width="2" height="2" fill="#84f0a1" />
+              <rect x="9" y="6" width="2" height="2" fill="#84f0a1" />
             </svg>
             <span
-              style={{ fontSize: 18, letterSpacing: 3, color: "#5c6070" }}
+              style={{ fontSize: 18, letterSpacing: 3, color: "#636a76" }}
             >
               INTERACTIVE EXPLAINER
             </span>
@@ -106,7 +106,7 @@ export default async function OpengraphImage() {
               marginTop: 22,
               fontSize: 54,
               fontWeight: 500,
-              color: "#fbfbfb",
+              color: "#d9dce0",
             }}
           >
             Watch an AI agent think
@@ -123,10 +123,10 @@ export default async function OpengraphImage() {
               }}
             >
               <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
-                <span style={{ fontSize: 16, letterSpacing: 2, color: "#5c6070" }}>
+                <span style={{ fontSize: 16, letterSpacing: 2, color: "#636a76" }}>
                   PLAN A
                 </span>
-                <span style={{ fontSize: 17, color: "#ef4444" }}>
+                <span style={{ fontSize: 17, color: "#d45a2b" }}>
                   † built on a misread symptom
                 </span>
               </div>
@@ -137,7 +137,7 @@ export default async function OpengraphImage() {
                     display: "flex",
                     gap: 12,
                     fontSize: 20,
-                    color: "#5c6070",
+                    color: "#636a76",
                     textDecoration: i < 3 ? "line-through" : "none",
                   }}
                 >
@@ -148,7 +148,7 @@ export default async function OpengraphImage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ fontSize: 16, letterSpacing: 2, color: "#5c6070" }}>
+              <span style={{ fontSize: 16, letterSpacing: 2, color: "#636a76" }}>
                 PLAN B
               </span>
               {planB.map((s, i) => (
@@ -158,10 +158,10 @@ export default async function OpengraphImage() {
                     display: "flex",
                     gap: 12,
                     fontSize: 20,
-                    color: i === 0 ? "#fbfbfb" : "#5c6070",
+                    color: i === 0 ? "#d9dce0" : "#636a76",
                   }}
                 >
-                  <span style={{ color: i === 0 ? "#22c55e" : "#5c6070" }}>
+                  <span style={{ color: i === 0 ? "#84f0a1" : "#636a76" }}>
                     {i === 0 ? "▸" : "·"}
                   </span>
                   <span>{s}</span>
@@ -177,10 +177,10 @@ export default async function OpengraphImage() {
                 display: "flex",
                 position: "relative",
                 height: 2,
-                background: "#252525",
+                background: "#474b56",
               }}
             >
-              <div style={{ width: "50%", height: 2, background: "#22c55e" }} />
+              <div style={{ width: "50%", height: 2, background: "#84f0a1" }} />
               <div
                 style={{
                   position: "absolute",
@@ -188,7 +188,7 @@ export default async function OpengraphImage() {
                   top: -7,
                   width: 2,
                   height: 16,
-                  background: "#fbfbfb",
+                  background: "#d9dce0",
                 }}
               />
             </div>
@@ -197,7 +197,7 @@ export default async function OpengraphImage() {
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: 17,
-                color: "#8b8b95",
+                color: "#7b7e8a",
               }}
             >
               <span>the recovery — plan dies at 24.5s</span>

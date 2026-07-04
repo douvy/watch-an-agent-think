@@ -10,7 +10,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col border-x border-[#1a1a1a]">
         <Player />
         <footer className="flex items-baseline justify-between border-t border-[#1a1a1a] px-5 py-4 md:px-10">
-          <span className="font-mono text-[11px] text-[#5c6070]">
+          <span className="font-mono text-[11px] text-[#636a76]">
             Design engineer. I make AI comprehensible.
           </span>
           <a

@@ -128,28 +128,6 @@ function enterStyle(ms: number, at: number): React.CSSProperties {
   };
 }
 
-function Corners() {
-  const pos = [
-    "-top-[5px] -left-[5px]",
-    "-top-[5px] -right-[5px]",
-    "-bottom-[5px] -left-[5px]",
-    "-bottom-[5px] -right-[5px]",
-  ];
-  return (
-    <>
-      {pos.map((p) => (
-        <span
-          key={p}
-          aria-hidden
-          className={`pointer-events-none absolute ${p} font-mono text-[9px] leading-none text-[#3d3d3d] select-none`}
-        >
-          +
-        </span>
-      ))}
-    </>
-  );
-}
-
 function Plan({ plan, label, ms }: { plan: PlanView; label: string; ms: number }) {
   const death = 1 - settle(ms, plan.deadAt, gentle); // 1 → 0 as death settles
   const dead = plan.deadAt !== undefined;
@@ -188,7 +166,7 @@ function Plan({ plan, label, ms }: { plan: PlanView; label: string; ms: number }
                   ? "text-header-text"
                   : st === "done"
                     ? "text-muted"
-                    : "text-[#5c6070]"
+                    : "text-[#636a76]"
               }`}
             >
               <span className="mt-px w-3 shrink-0">
@@ -200,7 +178,7 @@ function Plan({ plan, label, ms }: { plan: PlanView; label: string; ms: number }
                   <span>·</span>
                 )}
               </span>
-              <span className={st === "done" ? "line-through decoration-[#3d3d3d]" : ""}>
+              <span className={st === "done" ? "line-through decoration-[#4d525e]" : ""}>
                 {step}
               </span>
             </li>
@@ -243,13 +221,15 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
     const Icon = TOOL_ICONS[block.tool] ?? Terminal;
     return (
       <div style={wrap} className="font-mono text-[12px] leading-relaxed">
+        {/* Machine voice gets the second hue — blue tool names let the eye
+            skip action-to-action without reading every line */}
         <div className="flex items-center gap-2 text-muted">
-          <Icon size={12} className="shrink-0 text-[#5c6070]" />
-          <span className="text-[#5c6070]">{block.tool}</span>
+          <Icon size={12} className="shrink-0 text-link/70" />
+          <span className="text-link">{block.tool}</span>
           <span className="truncate text-foreground">{block.input}</span>
         </div>
         {block.pending ? (
-          <div className="mt-1 pl-5 text-[11px] text-[#5c6070]">running…</div>
+          <div className="mt-1 pl-5 text-[11px] text-[#636a76]">running…</div>
         ) : (
           <div
             style={enterStyle(ms, block.resultAt ?? block.at)}
@@ -270,9 +250,8 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
     return (
       <div
         style={enterStyle(ms, block.at)}
-        className="relative border border-border bg-surface px-3 py-2.5"
+        className="rounded-sm border border-border bg-surface px-3 py-2.5"
       >
-        <Corners />
         <div className="mb-1 flex items-center gap-2">
           <Archive size={11} className="text-warning" />
           <span className="label">compacted</span>
@@ -287,9 +266,8 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
   return (
     <div
       style={enterStyle(ms, block.at)}
-      className="relative border border-accent/30 bg-surface px-3 py-2.5"
+      className="rounded-sm border border-accent/30 bg-surface px-3 py-2.5"
     >
-      <Corners />
       <div className="label mb-1">done</div>
       <div className="font-serif text-[17px] text-header-text italic">
         {block.verdict}
@@ -334,7 +312,7 @@ function Scrubber({
       {ticks.map((t, i) => (
         <div
           key={i}
-          className="absolute top-1/2 h-[5px] w-px -translate-y-1/2 bg-[#3d3d3d]"
+          className="absolute top-1/2 h-[5px] w-px -translate-y-1/2 bg-[#4d525e]"
           style={{ left: `${(t / duration) * 100}%` }}
         />
       ))}
@@ -469,51 +447,52 @@ export function Player() {
     <>
       {/* Hero — live. The mascot and the narration line run off the same
           (scenario, ms) as the window below; the display type stays still. */}
-      <header className="relative border-b border-[#1a1a1a] px-5 py-12 md:px-10 md:py-14">
+      <header className="relative border-b border-[#1a1a1a] px-5 py-4 md:px-10 md:py-8">
         {/* registration marks on the bottom rule — drafting-table signature */}
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-[7px] -left-[4px] font-mono text-[9px] leading-none text-[#3d3d3d] select-none"
+          className="pointer-events-none absolute -bottom-[7px] -left-[4px] font-mono text-[9px] leading-none text-[#4d525e] select-none"
         >
           +
         </span>
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-[4px] -bottom-[7px] font-mono text-[9px] leading-none text-[#3d3d3d] select-none"
+          className="pointer-events-none absolute -right-[4px] -bottom-[7px] font-mono text-[9px] leading-none text-[#4d525e] select-none"
         >
           +
         </span>
-        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="label mb-4">interactive explainer</p>
-            <h1 className="text-[42px] leading-[1.04] font-bold tracking-tight text-header-text md:text-[64px]">
-              Watch an AI
-              <br />
-              agent think
-            </h1>
-            <p className="mt-5 flex max-w-sm items-start gap-2 font-mono text-[11px] leading-relaxed text-[#5c6070]">
-              <span aria-hidden className="mt-[5px] h-1 w-1 shrink-0 bg-accent" />
-              No model behind this page — every run is a hand-written script
-              you can scrub.
-            </p>
-          </div>
-          {/* Live readout — the mascot and narration track the run below.
-              Fixed width on md so the column never resizes with the text. */}
-          <div className="flex shrink-0 flex-col gap-3 md:w-[300px]">
-            <div className="flex items-center justify-between">
-              <span className="label flex items-center gap-1.5">
-                <span aria-hidden className="h-1 w-1 bg-accent" />
-                live
-              </span>
-              <span className="font-mono text-[10px] text-[#3d3d3d]">
+        {/* Masthead — the title is a wordmark, not a billboard. The animated
+            marquee below is the hero. */}
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="shrink-0 text-[15px] font-bold tracking-tight text-header-text md:text-[17px]">
+            Watch an AI agent think
+            <span className="label ml-3 hidden font-normal md:inline">
+              interactive explainer
+            </span>
+          </h1>
+          <p className="hidden items-start gap-2 text-right font-mono text-[11px] leading-relaxed text-[#636a76] md:flex">
+            <span aria-hidden className="mt-[5px] h-1 w-1 shrink-0 bg-accent" />
+            No model — every run is a hand-written script you can scrub.
+          </p>
+        </div>
+
+        {/* Live marquee — mascot + narration, driven by the same
+            (scenario, ms) as the window below. This is what moves; it gets
+            the display size. */}
+        <div className="mt-4 flex items-center gap-4 md:mt-7 md:gap-5">
+          <Creature state={state} ms={ms} size={56} />
+          <div className="min-w-0">
+            <div className="label mb-1.5 flex items-center gap-1.5">
+              <span aria-hidden className="h-1 w-1 bg-accent" />
+              live
+              <span className="ml-1 font-mono text-[10px] text-[#4d525e] normal-case">
                 fig. {String(idx + 1).padStart(2, "0")}
               </span>
             </div>
-            <Creature state={state} ms={ms} size={44} />
             {/* min-h reserves two lines so the mascot doesn't bounce as the
                 line wraps differently each beat */}
             <p
-              className="min-h-[2.6em] max-w-md text-[14px] leading-snug text-foreground md:text-[15px]"
+              className="min-h-[2.6em] max-w-xl text-[17px] leading-snug tracking-tight text-header-text md:min-h-[1.3em] md:text-[24px]"
               style={narration.at > 0 ? enterStyle(ms, narration.at) : undefined}
             >
               {narration.text}
@@ -522,36 +501,38 @@ export function Player() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 py-10 md:px-10">
-      {/* Player shell — window anatomy: title bar, tabs, task, panels, status */}
-      <div className="relative border border-border bg-background">
-        <Corners />
-
-        {/* Title bar */}
-        <div className="relative flex items-center border-b border-border px-3 py-2">
+      <div className="flex-1 px-4 pt-3 pb-6 md:px-10 md:py-10">
+      {/* Player shell — window anatomy: title bar, tabs, task, panels, status.
+          Chrome on surface, content wells on well: the window reads as a
+          warm tonal object on the black page, Zed-style. */}
+      <div className="overflow-hidden rounded-sm border border-border bg-well">
+        {/* Title bar — chrome rows are surface, content wells stay black:
+            the banding does the sectioning so text doesn't have to */}
+        <div className="relative flex items-center border-b border-border bg-surface px-3 py-2">
           <div className="flex items-center gap-1.5" aria-hidden>
-            <span className="h-[7px] w-[7px] rounded-full border border-[#3d3d3d]" />
-            <span className="h-[7px] w-[7px] rounded-full border border-[#3d3d3d]" />
-            <span className="h-[7px] w-[7px] rounded-full border border-[#3d3d3d]" />
+            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
+            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
+            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
           </div>
-          <span className="absolute left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#5c6070]">
+          <span className="absolute left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#636a76]">
             data/{scenario.id}.ts
           </span>
-          <span className="ml-auto font-mono text-[9px] tracking-[0.09em] text-[#3d3d3d] uppercase">
+          <span className="ml-auto font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase">
             read-only
           </span>
         </div>
 
-        {/* Scenario tabs */}
-        <div className="flex items-stretch border-b border-border">
+        {/* Scenario tabs — active tab drops to the content black, like an
+            editor tab fused to its buffer */}
+        <div className="flex items-stretch border-b border-border bg-surface">
           {scenarios.map((sc, i) => (
             <button
               key={sc.id}
               onClick={() => select(i)}
               className={`relative flex items-center gap-2 border-r border-border px-4 py-2.5 font-mono text-[11px] tracking-wide uppercase transition-colors ${
                 i === idx
-                  ? "bg-surface text-header-text"
-                  : "text-[#5c6070] hover:bg-hover-bg hover:text-muted"
+                  ? "bg-well text-header-text"
+                  : "text-[#636a76] hover:bg-hover-bg hover:text-muted"
               }`}
             >
               {i === idx && (
@@ -559,7 +540,7 @@ export function Player() {
               )}
               <kbd
                 className={`inline-flex h-4 w-4 items-center justify-center border text-[9px] ${
-                  i === idx ? "border-accent/50 text-accent" : "border-border text-[#5c6070]"
+                  i === idx ? "border-accent/50 text-accent" : "border-border text-[#636a76]"
                 }`}
               >
                 {i + 1}
@@ -575,20 +556,20 @@ export function Player() {
           <span className="min-w-0 truncate font-mono text-[13px] text-header-text">
             {scenario.task}
           </span>
-          <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-[#5c6070] md:block">
+          <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-[#636a76] md:block">
             {(scenario.durationMs / 1000).toFixed(0)}s · {scenario.events.length} events
           </span>
         </div>
 
-        <div className="grid md:grid-cols-[260px_1fr_200px] md:divide-x md:divide-[#252525] max-md:divide-y max-md:divide-[#252525]">
+        <div className="grid md:grid-cols-[260px_1fr_200px] md:divide-x md:divide-border max-md:divide-y max-md:divide-border">
           {/* Mind */}
           {/* min-w-0 on every grid section: grid children default to
               min-width auto, so one long tool line would blow the tracks
               out past the player border */}
           <section className="flex min-w-0 flex-col max-md:order-1">
-            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+            <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">mind</span>
-              <span className="font-mono text-[10px] text-[#5c6070]">
+              <span className="font-mono text-[10px] text-[#636a76]">
                 {state.plans.length === 0
                   ? "—"
                   : `${state.plans.length} plan${state.plans.length > 1 ? "s" : ""}`}
@@ -604,16 +585,16 @@ export function Player() {
                 />
               ))}
               {state.plans.length === 0 && (
-                <div className="font-mono text-[12px] text-[#5c6070]">—</div>
+                <div className="font-mono text-[12px] text-[#636a76]">—</div>
               )}
             </div>
           </section>
 
           {/* Action stream */}
           <section className="flex min-w-0 flex-col max-md:order-3">
-            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+            <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">action stream</span>
-              <span className="font-mono text-[10px] text-[#5c6070]">
+              <span className="font-mono text-[10px] text-[#636a76]">
                 {state.lastEventIndex + 1}/{scenario.events.length} events
               </span>
             </div>
@@ -625,16 +606,16 @@ export function Player() {
                 <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} />
               ))}
               {state.blocks.length === 0 && (
-                <div className="font-mono text-[12px] text-[#5c6070]">waiting…</div>
+                <div className="font-mono text-[12px] text-[#636a76]">waiting…</div>
               )}
             </div>
           </section>
 
           {/* Context gauge — stats cell */}
           <section className="flex min-w-0 flex-col max-md:order-2">
-            <div className="flex items-center justify-between border-b border-border px-4 py-1.5">
+            <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">context</span>
-              <span className="font-mono text-[10px] text-[#5c6070]">
+              <span className="font-mono text-[10px] text-[#636a76]">
                 {Math.round(pct * 100)}%
               </span>
             </div>
@@ -642,14 +623,14 @@ export function Player() {
               <div className="font-mono text-[15px] leading-none text-header-text md:text-[26px]">
                 {displayTokens.toLocaleString()}
               </div>
-              <div className="font-mono text-[10px] text-[#5c6070] md:mt-1 md:text-[11px]">
+              <div className="font-mono text-[10px] text-[#636a76] md:mt-1 md:text-[11px]">
                 / {CONTEXT_BUDGET.toLocaleString()} tokens
               </div>
               <div className="relative h-1 flex-1 bg-hover-bg md:mt-3 md:w-full md:flex-none">
                 <div className={`h-full ${gaugeColor}`} style={{ width: `${pct * 100}%` }} />
                 {/* threshold notches: warning at 75%, danger at 90% */}
-                <span aria-hidden className="absolute top-0 left-3/4 h-full w-px bg-[#3d3d3d]" />
-                <span aria-hidden className="absolute top-0 left-[90%] h-full w-px bg-[#3d3d3d]" />
+                <span aria-hidden className="absolute top-0 left-3/4 h-full w-px bg-[#4d525e]" />
+                <span aria-hidden className="absolute top-0 left-[90%] h-full w-px bg-[#4d525e]" />
               </div>
             </div>
           </section>
@@ -666,7 +647,7 @@ export function Player() {
                 setPlaying((p) => !p);
               }
             }}
-            className="flex h-7 w-7 shrink-0 items-center justify-center border border-border text-muted hover:border-[#3d3d3d] hover:text-header-text"
+            className="flex h-7 w-7 shrink-0 items-center justify-center border border-border text-muted hover:border-[#4d525e] hover:text-header-text"
             aria-label={ended ? "replay" : playing ? "pause" : "play"}
           >
             {ended ? <RotateCcw size={12} /> : playing ? <Pause size={12} /> : <Play size={12} />}
@@ -698,7 +679,7 @@ export function Player() {
                   setPlaying(true);
                 }}
                 className={`flex items-center gap-1.5 py-1 font-mono text-[10px] tracking-wide uppercase ${
-                  active ? "text-header-text" : "text-[#5c6070] hover:text-muted"
+                  active ? "text-header-text" : "text-[#636a76] hover:text-muted"
                 }`}
               >
                 <span className={active ? "text-accent" : ""}>
@@ -706,7 +687,7 @@ export function Player() {
                 </span>
                 {ch.label}
                 {active && (
-                  <span className="text-[#5c6070]">@{(ch.at / 1000).toFixed(1)}s</span>
+                  <span className="text-[#636a76]">@{(ch.at / 1000).toFixed(1)}s</span>
                 )}
               </button>
             );
@@ -714,7 +695,7 @@ export function Player() {
         </div>
 
         {/* Status bar */}
-        <div className="flex items-center justify-between border-t border-border px-3 py-1.5 font-mono text-[10px]">
+        <div className="flex items-center justify-between border-t border-border bg-surface px-3 py-1.5 font-mono text-[10px]">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-muted">
               <span
@@ -724,20 +705,20 @@ export function Player() {
                     ? "border border-accent"
                     : playing
                       ? "bg-accent"
-                      : "bg-[#5c6070]"
+                      : "bg-[#636a76]"
                 }`}
               />
               {ended ? "done" : playing ? "playing" : "paused"}
             </span>
-            <span aria-hidden className="text-[#3d3d3d]">
+            <span aria-hidden className="text-[#4d525e]">
               ·
             </span>
-            <span className="text-[#5c6070]">
+            <span className="text-[#636a76]">
               run {String(idx + 1).padStart(2, "0")} /{" "}
               {String(scenarios.length).padStart(2, "0")}
             </span>
           </div>
-          <span className="hidden text-[#5c6070] md:block">
+          <span className="hidden text-[#636a76] md:block">
             space play · ← → scrub · 1–3 runs
           </span>
         </div>

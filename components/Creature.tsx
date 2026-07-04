@@ -14,9 +14,9 @@ type Mood = "done" | "setback" | "compacting" | "focus" | "idle";
 
 const BODY = "#3a3f4a";
 const PATCH = "#555b68";
-const GREEN = "#22c55e";
-const RED = "#ef4444";
-const DOT = "#8b8b95";
+const GREEN = "#84f0a1";
+const RED = "#d45a2b";
+const DOT = "#7b7e8a";
 
 function moodOf(state: TimelineState, ms: number): Mood {
   if (state.done) return "done";
