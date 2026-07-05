@@ -888,7 +888,7 @@ export function Player() {
             line); desktop puts the mascot inline with the text. The text
             column is fixed-width on desktop so the centered group never
             changes width — no sliding as the line length changes. */}
-        <div className="mt-3 flex flex-col items-center gap-2.5 md:mt-4 md:flex-row md:justify-center md:gap-6">
+        <div className="mt-3 flex flex-col items-center gap-2.5 md:mt-4 md:flex-row md:justify-center md:gap-3">
           <Creature state={state} ms={ms} size={56} />
           {/* min-h reserves two lines so the layout doesn't bounce as the
               line wraps differently each beat */}
