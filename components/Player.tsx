@@ -539,8 +539,10 @@ export function Player() {
     prevTokens: number;
   } | null>(null);
   const [rewriteT, setRewriteT] = useState(0);
-  // The mascot's voice — off by default, lives in the status bar.
-  const [sound, setSound] = useState(false);
+  // The mascot's voice — on by default (the AudioContext still waits for
+  // the first click, so the browser's gesture rule is satisfied by
+  // pressing play). Toggle lives in the status bar.
+  const [sound, setSound] = useState(true);
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -893,7 +895,7 @@ export function Player() {
           {/* the marquee speaks mint in the agent's voice; when the question
               is the reader's, it speaks the human's cream */}
           <p
-            className={`min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:w-[36rem] md:text-left md:text-[24px] ${
+            className={`min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:w-[36rem] md:text-[24px] ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
             style={
@@ -906,6 +908,9 @@ export function Player() {
           >
             {shownNarration.text}
           </p>
+          {/* invisible twin of the mascot — balances the flex row so the
+              text column (and the line within it) sits dead center */}
+          <span aria-hidden className="hidden w-14 shrink-0 md:block" />
         </div>
       </header>
 
