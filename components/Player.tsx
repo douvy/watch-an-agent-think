@@ -52,7 +52,7 @@ function narrationOf(
   lastEventIndex: number,
 ): { at: number; text: string } {
   let plans = 0;
-  let out = { at: 0, text: "An agent is about to work through a real task." };
+  let out = { at: 0, text: "An agent is about to work through a real task. Press play." };
   for (let i = 0; i <= lastEventIndex; i++) {
     const e = scenario.events[i];
     switch (e.type) {
@@ -356,8 +356,10 @@ export function Player() {
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
 
-  // Deep link in: ?s=2&t=34 lands on that scenario at that second, then plays.
-  // Auto-play on load — the share loop lands on a page already thinking.
+  // Deep link in: ?s=2&t=34 lands on that scenario at that second, then plays —
+  // the sharer picked the moment, so arriving mid-thought is the point.
+  // Cold loads hold the cover frame (task + plan + narration at 0) and wait
+  // for the viewer to press play: read first, then watch.
   // URL params only exist client-side; a lazy initializer would mismatch
   // hydration, so this must be a mount effect.
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -368,8 +370,10 @@ export function Player() {
     if (si) setIdx(si);
     const t = Number(p.get("t"));
     if (t > 0) setMs(Math.min(t * 1000, scenarios[si].durationMs));
-    const timer = setTimeout(() => setPlaying(true), 400);
-    return () => clearTimeout(timer);
+    if (si || t > 0) {
+      const timer = setTimeout(() => setPlaying(true), 400);
+      return () => clearTimeout(timer);
+    }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -663,7 +667,7 @@ export function Player() {
               playing
                 ? "border-border text-muted hover:border-[#4d525e] hover:text-header-text"
                 : "border-accent bg-accent text-[#16181d] hover:bg-accent/80"
-            }`}
+            } ${ms === 0 && !playing ? "animate-pulse" : ""}`}
             aria-label={ended ? "replay" : playing ? "pause" : "play"}
           >
             {ended ? <RotateCcw size={12} /> : playing ? <Pause size={12} /> : <Play size={12} />}
