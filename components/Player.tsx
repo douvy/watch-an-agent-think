@@ -11,6 +11,7 @@ import {
   Play,
   Pause,
   RotateCcw,
+  User,
 } from "lucide-react";
 import { scenarios } from "@/data";
 import { Creature } from "@/components/Creature";
@@ -22,6 +23,15 @@ import {
   type PlanView,
   type Scenario,
 } from "@/lib/timeline";
+
+// Each run's character, forecast as a tab dot in the palette the player
+// already teaches: mint = clean, orange = a plan dies, yellow = memory
+// pressure. Derived from the script, not hand-tagged.
+function runDot(scenario: Scenario): string {
+  if (scenario.events.some((e) => e.type === "plan_dead")) return "bg-accent-negative";
+  if (scenario.events.some((e) => e.type === "compact")) return "bg-warning";
+  return "bg-accent";
+}
 
 // Chapters derive from the script — the beats worth jumping to.
 function chaptersOf(scenario: Scenario): { at: number; label: string }[] {
@@ -327,11 +337,14 @@ function Scrubber({
     >
       {/* track */}
       <div className="absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-border" />
-      {/* event ticks */}
+      {/* event ticks — consumed ticks warm to mint, so the strip itself
+          records what you've already watched */}
       {ticks.map((t, i) => (
         <div
           key={i}
-          className="absolute top-1/2 h-[5px] w-px -translate-y-1/2 bg-[#4d525e]"
+          className={`absolute top-1/2 h-[5px] w-px -translate-y-1/2 ${
+            t <= ms ? "bg-accent/40" : "bg-[#4d525e]"
+          }`}
           style={{ left: `${(t / duration) * 100}%` }}
         />
       ))}
@@ -340,9 +353,9 @@ function Scrubber({
         className="absolute top-1/2 left-0 h-px -translate-y-1/2 bg-accent"
         style={{ width: `${(ms / duration) * 100}%` }}
       />
-      {/* playhead */}
+      {/* playhead — a real grabbable handle, not a hairline; grows on hover */}
       <div
-        className="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-header-text"
+        className="absolute top-1/2 h-3 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-header-text group-hover:h-4"
         style={{ left: `${(ms / duration) * 100}%` }}
       />
     </div>
@@ -475,7 +488,13 @@ export function Player() {
     <>
       {/* Hero — live. The mascot and the narration line run off the same
           (scenario, ms) as the window below; the display type stays still. */}
-      <header className="relative border-b border-[#1a1a1a] px-5 py-4 md:px-10 md:py-6">
+      <header className="relative px-5 py-3 md:px-10 md:py-5">
+        {/* the bottom rule runs full-bleed past the page rails — Zed's
+            drafting-table grid: horizontal and vertical lines cross */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-1/2 h-px w-screen -translate-x-1/2 bg-[#1a1a1a]"
+        />
         {/* registration marks on the bottom rule — drafting-table signature */}
         <span
           aria-hidden
@@ -500,7 +519,7 @@ export function Player() {
             line); desktop puts the mascot inline with the text. The text
             column is fixed-width on desktop so the centered group never
             changes width — no sliding as the line length changes. */}
-        <div className="mt-4 flex flex-col items-center gap-2.5 md:mt-5 md:flex-row md:justify-center md:gap-6">
+        <div className="mt-3 flex flex-col items-center gap-2.5 md:mt-4 md:flex-row md:justify-center md:gap-6">
           <Creature state={state} ms={ms} size={56} />
           {/* min-h reserves two lines so the layout doesn't bounce as the
               line wraps differently each beat */}
@@ -517,10 +536,12 @@ export function Player() {
       {/* Player shell — window anatomy: title bar, tabs, task, panels, status.
           Chrome on surface, content wells on well: the window reads as a
           warm tonal object on the black page, Zed-style. */}
-      <div className="overflow-hidden rounded-sm border border-border bg-well">
+      <div className="overflow-hidden rounded-lg border border-border bg-well">
         {/* Title bar — chrome rows are surface, content wells stay black:
             the banding does the sectioning so text doesn't have to */}
-        <div className="relative flex items-stretch border-b border-border bg-surface">
+        {/* inset highlight on the top edge — the machined-metal glint dark
+            windows use for depth; a drop shadow is invisible on pure black */}
+        <div className="relative flex items-stretch border-b border-border bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {/* left section is exactly the plan column's width, so the title
               bar's dividers line up with the grid below — Zed's trick */}
           <div className="flex items-stretch bg-well md:w-[260px] md:border-r md:border-border">
@@ -540,17 +561,22 @@ export function Player() {
           <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-[#dcdfe3]">
             data/{scenario.id}.ts
           </span>
-          <span className="ml-auto flex items-center px-3 font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase">
-            read-only
-          </span>
-          {/* the avatar is the agent itself — same face, same clock */}
-          <div className="flex items-center px-2.5 py-1.5">
-            <span
-              aria-hidden
-              className="flex h-5 w-5 items-center justify-center rounded-full border border-[#4d525e] bg-well"
-            >
-              <Creature state={state} ms={ms} size={13} />
+          {/* right section mirrors the memory column below (200px, border-l),
+              so the window's vertical seams run top to bottom — Zed's frame
+              is one set of continuous lines, not per-row dividers */}
+          <div className="ml-auto flex items-center justify-end md:w-[200px] md:justify-between md:border-l md:border-border">
+            <span className="hidden px-3 font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase md:block">
+              read-only
             </span>
+            {/* the avatar is the agent itself — same face, same clock */}
+            <div className="flex items-center px-2.5 py-1.5">
+              <span
+                aria-hidden
+                className="flex h-5 w-5 items-center justify-center rounded-full border border-[#4d525e] bg-well"
+              >
+                <Creature state={state} ms={ms} size={13} />
+              </span>
+            </div>
           </div>
         </div>
 
@@ -563,7 +589,7 @@ export function Player() {
             <button
               key={sc.id}
               onClick={() => select(i)}
-              className={`relative flex items-center gap-2 border-r border-b px-4 py-2 font-mono text-[12px] transition-colors ${
+              className={`relative flex items-center gap-2 border-r border-b px-4 py-2.5 font-mono text-[12px] transition-colors ${
                 i === idx
                   ? "border-r-border border-b-transparent bg-well text-header-text"
                   : "border-r-border border-b-border text-[#a9adb6] hover:bg-hover-bg hover:text-header-text"
@@ -574,27 +600,43 @@ export function Player() {
               )}
               <span
                 aria-hidden
-                className={`text-[10px] ${i === idx ? "text-accent" : "text-[#636a76]"}`}
+                className={`h-[5px] w-[5px] rounded-full ${runDot(sc)} ${
+                  i === idx ? "" : "opacity-40"
+                }`}
+              />
+              <span
+                aria-hidden
+                className={`text-[9px] tracking-[0.08em] uppercase ${
+                  i === idx ? "text-[#a9adb6]" : "text-[#636a76]"
+                }`}
               >
-                {i + 1}
+                run {String(i + 1).padStart(2, "0")}
               </span>
-              {sc.title}
+              <span className="max-sm:hidden">{sc.title}</span>
             </button>
           ))}
           <div aria-hidden className="flex-1 border-b border-border" />
         </div>
 
-        {/* Task bar — the human's prompt, styled like one: shell arrow +
-            the brightest text in the chrome. The active tab pours into
-            this row, so the task reads as the buffer's first line. */}
-        <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
-          <span aria-hidden className="shrink-0 font-mono text-[13px] text-accent">
-            ❯
-          </span>
-          <span className="min-w-0 truncate font-mono text-[14px] text-[#f0f2f5]">
-            {scenario.task}
-          </span>
-          <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-[#636a76] md:block">
+        {/* Task bar — the human rendered as a Zed collaborator: their
+            cursor sits at the head of the line wearing a name flag, and
+            their selection tints the task. Blue is the human's player
+            color; mint stays the agent's. */}
+        <div className="flex items-center border-b border-border px-4 pt-4 pb-3">
+          <div className="relative min-w-0">
+            <span
+              aria-hidden
+              className="absolute -top-[12px] -left-px flex items-center gap-[3px] rounded-[2px] rounded-bl-none bg-link px-[5px] font-mono text-[9px] leading-[13px] font-semibold tracking-[0.06em] text-[#0b1520] uppercase"
+            >
+              <User size={8} strokeWidth={2.75} />
+              human
+            </span>
+            <span aria-hidden className="absolute top-0 bottom-0 -left-px w-[2px] bg-link" />
+            <span className="block truncate bg-link/15 py-[3px] pr-1.5 pl-2 font-mono text-[14px] text-[#f0f2f5]">
+              {scenario.task}
+            </span>
+          </div>
+          <span className="ml-auto hidden shrink-0 pl-3 font-mono text-[10px] text-[#636a76] md:block">
             {(scenario.durationMs / 1000).toFixed(0)}s · {scenario.events.length} events
           </span>
         </div>
@@ -685,11 +727,13 @@ export function Player() {
                 setPlaying((p) => !p);
               }
             }}
-            className={`flex h-7 w-7 shrink-0 items-center justify-center border ${
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border transition-colors ${
               playing
                 ? "border-border text-muted hover:border-[#4d525e] hover:text-header-text"
-                : "border-accent bg-accent text-[#16181d] hover:bg-accent/80"
-            } ${ms === 0 && !playing ? "animate-pulse" : ""}`}
+                : pristine
+                  ? "border-accent bg-accent text-[#16181d] hover:bg-accent/80"
+                  : "border-accent/60 text-accent hover:border-accent hover:bg-accent hover:text-[#16181d]"
+            }`}
             aria-label={ended ? "replay" : playing ? "pause" : "play"}
           >
             {ended ? <RotateCcw size={12} /> : playing ? <Pause size={12} /> : <Play size={12} />}
@@ -703,8 +747,10 @@ export function Player() {
               setMs(m);
             }}
           />
-          <span className="w-20 shrink-0 text-right font-mono text-[11px] text-muted">
-            {(ms / 1000).toFixed(1)} / {(scenario.durationMs / 1000).toFixed(0)}s
+          {/* current time bright, total dim — the number that moves leads */}
+          <span className="w-20 shrink-0 text-right font-mono text-[11px]">
+            <span className="text-[#dcdfe3]">{(ms / 1000).toFixed(1)}</span>
+            <span className="text-[#636a76]"> / {(scenario.durationMs / 1000).toFixed(0)}s</span>
           </span>
         </div>
 
