@@ -58,6 +58,24 @@ export function Creature({
   const dotCount = (Math.floor(ms / 450) % 3) + 1; // 1..3 thought dots
   const armDown = Math.floor(ms / 280) % 2; // typing cadence
 
+  // Movement — same discrete pixel frames as the face, whole-sprite. A hop
+  // as each event lands, a flinch down when one fails, a double-bounce at
+  // the end, and a slow idle bob between beats. Pure f(ms): scrub back and
+  // he un-hops.
+  let dy = 0;
+  const eventAge = ms - state.lastEventAt;
+  const doneAt = state.blocks.find((b) => b.kind === "done")?.at;
+  if (mood === "done" && doneAt !== undefined) {
+    const a = ms - doneAt;
+    dy = a < 640 ? [-1, 0, -1, 0][Math.floor(a / 160)] : 0;
+  } else if (mood === "setback") {
+    dy = eventAge >= 0 && eventAge < 240 ? 1 : 0;
+  } else if (ms > 0 && eventAge >= 0 && eventAge < 180) {
+    dy = -1;
+  } else if (mood === "idle" || mood === "asking") {
+    dy = Math.floor(ms / 820) % 2;
+  }
+
   const earsFlat = mood === "setback" || mood === "compacting";
 
   let dx = 0;
@@ -96,7 +114,9 @@ export function Creature({
       viewBox="0 0 16 16"
       shapeRendering="crispEdges"
       aria-hidden
+      style={{ overflow: "visible" }} // hops cross the viewBox top by 1px
     >
+      <g transform={`translate(0 ${dy})`}>
       {/* thought dots, rising up-right while idle */}
       {mood === "idle" && (
         <g fill={DOT}>
@@ -155,6 +175,7 @@ export function Creature({
       <rect x={5 + dx} y={eyeY} width="2" height={eyeH} fill={eyeFill} />
       <rect x={9 + dx} y={eyeY} width="2" height={eyeH} fill={eyeFill} />
       {mood === "done" && <rect x="6" y="8" width="4" height="1" fill={BODY} />}
+      </g>
     </svg>
   );
 }

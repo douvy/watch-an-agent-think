@@ -12,9 +12,12 @@ import {
   Pause,
   RotateCcw,
   User,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { scenarios } from "@/data";
 import { Creature } from "@/components/Creature";
+import { chirp } from "@/lib/sound";
 import { createSpring, presets } from "@/lib/spring";
 import {
   stateAt,
@@ -521,6 +524,8 @@ export function Player() {
     prevTokens: number;
   } | null>(null);
   const [rewriteT, setRewriteT] = useState(0);
+  // The mascot's voice — off by default, lives in the status bar.
+  const [sound, setSound] = useState(false);
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -614,8 +619,9 @@ export function Player() {
       }
       setChoices((c) => ({ ...c, [choiceId]: option }));
       if (!playing && isGate) setPlaying(true);
+      if (sound) chirp("move"); // he acknowledges your pick
     },
-    [playing, choices, state.blocks, state.tokens],
+    [playing, choices, state.blocks, state.tokens, sound],
   );
 
   // The earliest unanswered decision is a hard wall on the timeline: no
@@ -721,6 +727,29 @@ export function Player() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [rewrite]);
+
+  // The mascot's footsteps: a chirp as each event lands — playback only,
+  // never while scrubbing, only when the reader opted in. Simultaneous
+  // events collapse into one frame, so at most one chirp per beat.
+  const prevEventRef = useRef(-1);
+  useEffect(() => {
+    const prev = prevEventRef.current;
+    prevEventRef.current = state.lastEventIndex;
+    if (!sound || !playing || state.lastEventIndex <= prev) return;
+    const e = scenario.events[state.lastEventIndex];
+    if (!e) return;
+    chirp(
+      (e.type === "tool_result" && !e.ok) || e.type === "plan_dead"
+        ? "fail"
+        : e.type === "choice"
+          ? "ask"
+          : e.type === "compact"
+            ? "compact"
+            : e.type === "done"
+              ? "done"
+              : "move",
+    );
+  }, [state.lastEventIndex, sound, playing, scenario]);
 
   // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
   useEffect(() => {
@@ -1178,6 +1207,25 @@ export function Player() {
               run {String(idx + 1).padStart(2, "0")} /{" "}
               {String(scenarios.length).padStart(2, "0")}
             </span>
+            <span aria-hidden className="text-[#4d525e]">
+              ·
+            </span>
+            {/* the mascot's voice — the toggle click is the user gesture
+                that lets the AudioContext start; a hello-chirp confirms
+                it's audible the moment it's on */}
+            <button
+              onClick={() => {
+                if (!sound) chirp("ask");
+                setSound(!sound);
+              }}
+              aria-pressed={sound}
+              className={`flex items-center gap-1 transition-colors ${
+                sound ? "text-accent" : "text-[#636a76] hover:text-muted"
+              }`}
+            >
+              {sound ? <Volume2 size={11} /> : <VolumeX size={11} />}
+              sound
+            </button>
           </div>
           {/* keyboard hints, Zed palette style: key in a chip, action in dim
               text, hairline dividers between groups */}
