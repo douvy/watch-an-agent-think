@@ -180,11 +180,11 @@ export default async function OpengraphImage() {
                 background: "#474b56",
               }}
             >
-              <div style={{ width: "50%", height: 2, background: "#84f0a1" }} />
+              <div style={{ width: "46.4%", height: 2, background: "#84f0a1" }} />
               <div
                 style={{
                   position: "absolute",
-                  left: "50%",
+                  left: "46.4%",
                   top: -7,
                   width: 2,
                   height: 16,
@@ -200,8 +200,8 @@ export default async function OpengraphImage() {
                 color: "#7b7e8a",
               }}
             >
-              <span>the recovery — plan dies at 24.5s</span>
-              <span>29.0 / 58s</span>
+              <span>the recovery — plan dies at 29.0s</span>
+              <span>29.0 / 63s</span>
             </div>
           </div>
         </div>

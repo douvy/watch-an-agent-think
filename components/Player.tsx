@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Terminal,
   FileText,
@@ -18,8 +18,11 @@ import { Creature } from "@/components/Creature";
 import { createSpring, presets } from "@/lib/spring";
 import {
   stateAt,
+  resolveChoices,
+  eventActive,
   CONTEXT_BUDGET,
   type Block,
+  type Choices,
   type PlanView,
   type Scenario,
 } from "@/lib/timeline";
@@ -33,13 +36,27 @@ function runDot(scenario: Scenario): string {
   return "bg-accent";
 }
 
-// Chapters derive from the script — the beats worth jumping to.
-function chaptersOf(scenario: Scenario): { at: number; label: string }[] {
+// Decision beats: the run plays continuously, but a `choice` event parks
+// the clock at its settle point (at + HOLD_MS) and waits on the reader.
+// Their pick flips branch-tagged beats on; everything downstream is a pure
+// function of (scenario, ms, choices), so re-picking later rewrites the
+// run instantly. An unanswered question is a hard wall — no input moves
+// time past it. Answered ones never wall again, so replays run free.
+const HOLD_MS = 800;
+
+// Chapters derive from the script — the beats worth jumping to. Only the
+// reader's current path counts; the other branch's beats don't exist here.
+function chaptersOf(
+  scenario: Scenario,
+  resolved: Choices,
+): { at: number; label: string }[] {
   const out: { at: number; label: string }[] = [];
   for (const e of scenario.events) {
+    if (!eventActive(e, resolved)) continue;
     if (e.type === "plan") out.push({ at: e.at, label: out.length ? "replan" : "plan" });
     else if (e.type === "plan_dead") out.push({ at: e.at, label: "plan dies" });
     else if (e.type === "compact") out.push({ at: e.at, label: "compact" });
+    else if (e.type === "choice") out.push({ at: e.at, label: "decision" });
     else if (e.type === "tool_result" && !e.ok) out.push({ at: e.at, label: "setback" });
     else if (e.type === "done") out.push({ at: e.at, label: "done" });
   }
@@ -63,11 +80,13 @@ const TOOL_NARRATION: Record<string, string> = {
 function narrationOf(
   scenario: Scenario,
   lastEventIndex: number,
+  resolved: Choices,
 ): { at: number; text: string } {
   let plans = 0;
   let out = { at: 0, text: INTRO_NARRATION };
   for (let i = 0; i <= lastEventIndex; i++) {
     const e = scenario.events[i];
+    if (!eventActive(e, resolved)) continue;
     if (e.type === "plan") plans++;
     if (e.narration) {
       out = { at: e.at, text: e.narration };
@@ -105,6 +124,10 @@ function narrationOf(
           at: e.at,
           text: "My memory is nearly full, so I compress what I know.",
         };
+        break;
+      case "choice":
+        // the question itself is the storyteller line while it's live
+        out = { at: e.at, text: e.prompt };
         break;
       case "done":
         out = { at: e.at, text: "Done. Scrub back to see how I got here." };
@@ -206,27 +229,50 @@ function Plan({ plan, label, ms }: { plan: PlanView; label: string; ms: number }
   );
 }
 
-function StreamBlock({ block, ms }: { block: Block; ms: number }) {
+function StreamBlock({
+  block,
+  ms,
+  onPick,
+}: {
+  block: Block;
+  ms: number;
+  onPick?: (choiceId: string, option: string) => void;
+}) {
   // Absorption (compaction): block squeezes to nothing as the spring settles.
   const absorbedAt =
     block.kind === "thought" || block.kind === "tool" ? block.absorbedAt : undefined;
+  // Measured while live so the squeeze starts from the block's real height —
+  // a hard-coded cap would clip tall tool outputs the instant absorption
+  // starts. Fallback only matters if you deep-link into the middle of a
+  // squeeze, where the block is already near-gone.
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState(120);
+  useEffect(() => {
+    if (absorbedAt === undefined && measureRef.current) {
+      const h = measureRef.current.offsetHeight;
+      if (h !== measured) setMeasured(h);
+    }
+  }, [absorbedAt, measured, block]);
   const squeeze = 1 - settle(ms, absorbedAt, gentle); // 1 → 0
   if (absorbedAt !== undefined && squeeze <= 0.001) return null;
 
   // Teleprompter: a block recedes a few seconds after its moment passes so
   // the eye always knows where "now" is. Pure function of ms — scrub back
-  // and it re-brightens. The done card never recedes.
+  // and it re-brightens. The done card never recedes; choice cards stay
+  // bright forever because they stay interactive forever.
   const lastActivity =
     block.kind === "tool" ? (block.resultAt ?? block.at) : block.at;
   const recede =
-    block.kind === "done" ? 0 : clamp01((ms - lastActivity - 5000) / 1200);
+    block.kind === "done" || block.kind === "choice"
+      ? 0
+      : clamp01((ms - lastActivity - 5000) / 1200);
   const dim = 1 - 0.5 * recede;
 
   const wrap: React.CSSProperties =
     absorbedAt !== undefined
       ? {
           opacity: clamp01(squeeze),
-          maxHeight: `${clamp01(squeeze) * 120}px`,
+          maxHeight: `${clamp01(squeeze) * measured}px`,
           overflow: "hidden",
         }
       : (() => {
@@ -238,6 +284,7 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
     // Inner monologue — the human register, serif italic against tool mono.
     return (
       <div
+        ref={measureRef}
         style={wrap}
         className="border-l border-border py-0.5 pl-3 font-serif text-[15px] leading-relaxed text-foreground italic"
       >
@@ -249,7 +296,7 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
   if (block.kind === "tool") {
     const Icon = TOOL_ICONS[block.tool] ?? Terminal;
     return (
-      <div style={wrap} className="font-mono text-[12px] leading-relaxed">
+      <div ref={measureRef} style={wrap} className="font-mono text-[12px] leading-relaxed">
         {/* Machine voice gets the second hue — blue tool names let the eye
             skip action-to-action without reading every line */}
         <div className="flex items-center gap-2 text-muted">
@@ -269,6 +316,73 @@ function StreamBlock({ block, ms }: { block: Block; ms: number }) {
             }`}
           >
             {block.output}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (block.kind === "choice") {
+    // The reader's beat — rendered as the human's collaborator cursor
+    // arriving in the agent's stream: cream caret on the left edge +
+    // selection tint, the exact anatomy the task bar taught. Live = full
+    // tint; answered = the caret stays (this block is the human's mark)
+    // but the wash settles. Options are Zed inline chips; the picked one
+    // carries a check. Answered cards stay clickable forever — flipping
+    // the pick rewrites everything downstream.
+    const pending = block.picked === undefined;
+    return (
+      <div
+        style={enterStyle(ms, block.at)}
+        className={`relative overflow-hidden rounded-sm px-3 py-2.5 ${
+          pending ? "bg-human/10" : "border border-border bg-surface"
+        }`}
+      >
+        <span
+          aria-hidden
+          className={`absolute top-0 bottom-0 left-0 w-[2px] ${
+            pending ? "bg-human" : "bg-human/40"
+          }`}
+        />
+        <div className="mb-1.5 flex items-center justify-between">
+          <span
+            className={`text-[10px] font-medium tracking-[0.09em] uppercase ${
+              pending ? "text-human" : "text-[#dcdfe3]"
+            }`}
+          >
+            your call
+          </span>
+          {pending && (
+            <span className="font-mono text-[10px] text-human">waiting on you</span>
+          )}
+        </div>
+        <div className="mb-2.5 font-serif text-[15px] leading-snug text-header-text italic">
+          {block.prompt}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {block.options.map((o) => {
+            const isPicked = block.picked === o.id;
+            return (
+              <button
+                key={o.id}
+                onClick={() => onPick?.(block.choiceId, o.id)}
+                className={`flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-mono text-[12px] transition-colors max-md:px-2 max-md:py-1.5 ${
+                  isPicked
+                    ? "bg-human/25 text-[#f7f6f0]"
+                    : pending
+                      ? "bg-human/10 text-human hover:bg-human/20"
+                      : "bg-human/10 text-[#9b998c] hover:bg-human/20 hover:text-human"
+                }`}
+              >
+                {isPicked && <Check size={10} className="opacity-80" />}
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+        {!pending && (
+          <div className="mt-2 font-mono text-[10px] text-[#636a76]">
+            switch anytime — everything after rewrites
           </div>
         )}
       </div>
@@ -366,27 +480,70 @@ export function Player() {
   const [idx, setIdx] = useState(0);
   const [ms, setMs] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // The reader's picks. Everything on screen is stateAt(scenario, ms, choices)
+  // — flipping a pick rewrites all downstream state instantly, for free.
+  const [choices, setChoices] = useState<Choices>({});
   const scenario = scenarios[idx];
-  const state = useMemo(() => stateAt(scenario, ms), [scenario, ms]);
-  const chapters = useMemo(() => chaptersOf(scenario), [scenario]);
+  const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
+  const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
+  const chapters = useMemo(() => chaptersOf(scenario, resolved), [scenario, resolved]);
   const narration = useMemo(
-    () => narrationOf(scenario, state.lastEventIndex),
-    [scenario, state.lastEventIndex],
+    () => narrationOf(scenario, state.lastEventIndex, resolved),
+    [scenario, state.lastEventIndex, resolved],
+  );
+  // Only the reader's path exists on the strip and in the counters — the
+  // other branch's events don't tick, don't count.
+  const activeEvents = useMemo(
+    () => scenario.events.filter((e) => eventActive(e, resolved)),
+    [scenario, resolved],
+  );
+  const firedCount = useMemo(
+    () => activeEvents.filter((e) => e.at <= ms).length,
+    [activeEvents, ms],
   );
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
+  // A question is live and unanswered — it's the reader's turn. The chrome
+  // flips to the human's cream so the handoff is unmissable.
+  const yourCall =
+    !ended && state.blocks.some((b) => b.kind === "choice" && b.picked === undefined);
   // Cover frame: every scenario plans at t=0, so without this the opener
   // would be overwritten before anyone reads it. Until first play, the
   // storyteller introduces itself instead.
   const pristine = ms === 0 && !playing;
   const shownNarration = pristine ? { at: 0, text: INTRO_NARRATION } : narration;
 
-  // Deep link in: ?s=2&t=34 lands on that scenario at that second, then plays —
-  // the sharer picked the moment, so arriving mid-thought is the point.
-  // Cold loads hold the cover frame (task + plan + narration at 0) and wait
-  // for the viewer to press play: read first, then watch.
-  // URL params only exist client-side; a lazy initializer would mismatch
-  // hydration, so this must be a mount effect.
+  // Answering the live gate resumes the run — even if you scrubbed back a
+  // touch first. Flipping an already-answered question just rewrites
+  // history and stays put.
+  const pick = useCallback(
+    (choiceId: string, option: string) => {
+      const isGate = !(choiceId in choices);
+      setChoices((c) => ({ ...c, [choiceId]: option }));
+      if (!playing && isGate) setPlaying(true);
+    },
+    [playing, choices],
+  );
+
+  // The earliest unanswered decision is a hard wall on the timeline: no
+  // input — play, scrub, arrows, chapters, deep links — moves time past it
+  // until the reader answers. Once answered it never walls again, so
+  // replays and re-scrubs run free.
+  const maxMs = useMemo(() => {
+    for (const e of scenario.events) {
+      if (e.type === "choice" && !(e.choiceId in choices)) {
+        return Math.min(e.at + HOLD_MS, scenario.durationMs);
+      }
+    }
+    return scenario.durationMs;
+  }, [scenario, choices]);
+  // Parked at the wall — the only way forward is answering.
+  const blocked = ms >= maxMs && maxMs < scenario.durationMs;
+
+  // Deep link in: ?s=2&t=34 lands on that scenario at that second, paused —
+  // capped at the first decision, which the arriving reader must answer
+  // themselves. URL params only exist client-side; a lazy initializer would
+  // mismatch hydration, so this must be a mount effect.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -394,10 +551,10 @@ export function Player() {
     const si = s >= 1 && s <= scenarios.length ? s - 1 : 0;
     if (si) setIdx(si);
     const t = Number(p.get("t"));
-    if (t > 0) setMs(Math.min(t * 1000, scenarios[si].durationMs));
-    if (si || t > 0) {
-      const timer = setTimeout(() => setPlaying(true), 400);
-      return () => clearTimeout(timer);
+    if (t > 0) {
+      const firstChoice = scenarios[si].events.find((e) => e.type === "choice");
+      const cap = firstChoice ? firstChoice.at + HOLD_MS : scenarios[si].durationMs;
+      setMs(Math.min(t * 1000, scenarios[si].durationMs, cap));
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -417,8 +574,14 @@ export function Player() {
   }, [playing, ms, idx]);
 
   // Playback clock — rAF advances ms; everything else derives from it.
+  // Unanswered choices are gates: the clock parks at at + HOLD_MS (the
+  // beat's settle point) and waits. Answering removes the gate, so the
+  // effect re-arms with one fewer stop.
   useEffect(() => {
     if (!playing) return;
+    const gates = scenario.events
+      .filter((e) => e.type === "choice" && !(e.choiceId in choices))
+      .map((e) => Math.min(e.at + HOLD_MS, scenario.durationMs));
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -426,6 +589,11 @@ export function Player() {
       last = now;
       setMs((m) => {
         const next = m + dt;
+        const gate = gates.find((g) => m < g && next >= g);
+        if (gate !== undefined) {
+          setPlaying(false);
+          return gate;
+        }
         if (next >= scenario.durationMs) {
           setPlaying(false);
           return scenario.durationMs;
@@ -436,31 +604,40 @@ export function Player() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, scenario]);
+  }, [playing, scenario, choices]);
 
-  // Keyboard: space play/pause, 1-3 scenarios, arrows nudge.
+  // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === " ") {
         e.preventDefault();
-        setPlaying((p) => (ms >= scenario.durationMs ? (setMs(0), true) : !p));
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (ms >= scenario.durationMs) {
+          setMs(0);
+          setPlaying(true);
+        } else if (!blocked) {
+          setPlaying((p) => !p);
+        }
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
         setPlaying(false);
-        setMs((m) =>
-          Math.max(0, Math.min(scenario.durationMs, m + (e.key === "ArrowLeft" ? -2000 : 2000))),
-        );
+        setMs(Math.min(ms + 2000, maxMs));
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setPlaying(false);
+        setMs(Math.max(0, ms - 2000));
       } else {
         const n = Number(e.key);
         if (n >= 1 && n <= scenarios.length) {
           setIdx(n - 1);
           setMs(0);
+          setChoices({});
           setPlaying(true);
         }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [ms, scenario.durationMs]);
+  }, [ms, playing, blocked, maxMs, scenario.durationMs]);
 
   // Keep the stream pinned to the latest block during playback.
   useEffect(() => {
@@ -478,9 +655,11 @@ export function Player() {
   const gaugeColor =
     pct > 0.9 ? "bg-accent-negative" : pct > 0.75 ? "bg-warning" : "bg-accent";
 
+  // Picking a run starts it — it plays to its first decision and waits.
   const select = (i: number) => {
     setIdx(i);
     setMs(0);
+    setChoices({});
     setPlaying(true);
   };
 
@@ -523,8 +702,12 @@ export function Player() {
           <Creature state={state} ms={ms} size={56} />
           {/* min-h reserves two lines so the layout doesn't bounce as the
               line wraps differently each beat */}
+          {/* the marquee speaks mint in the agent's voice; when the question
+              is the reader's, it speaks the human's cream */}
           <p
-            className="min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug text-header-text md:min-h-[1.3em] md:w-[36rem] md:text-left md:text-[24px]"
+            className={`min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:w-[36rem] md:text-left md:text-[24px] ${
+              yourCall ? "text-human" : "text-accent-light"
+            }`}
             style={shownNarration.at > 0 ? enterStyle(ms, shownNarration.at) : undefined}
           >
             {shownNarration.text}
@@ -620,24 +803,27 @@ export function Player() {
 
         {/* Task bar — the human rendered as a Zed collaborator: their
             cursor sits at the head of the line wearing a name flag, and
-            their selection tints the task. Blue is the human's player
-            color; mint stays the agent's. */}
+            their selection tints the task. Cream is the human's player
+            color — the same warm paper as their text selection; mint
+            stays the agent's. */}
         <div className="flex items-center border-b border-border px-4 pt-4 pb-3">
           <div className="relative min-w-0">
             <span
               aria-hidden
-              className="absolute -top-[12px] -left-px flex items-center gap-[3px] rounded-[2px] rounded-bl-none bg-link px-[5px] font-mono text-[9px] leading-[13px] font-semibold tracking-[0.06em] text-[#0b1520] uppercase"
+              className="absolute -top-[12px] -left-px flex items-center gap-[3px] rounded-[2px] rounded-bl-none bg-human px-[5px] font-mono text-[9px] leading-[13px] font-semibold tracking-[0.06em] text-[#16181d] uppercase"
             >
               <User size={8} strokeWidth={2.75} />
               human
             </span>
-            <span aria-hidden className="absolute top-0 bottom-0 -left-px w-[2px] bg-link" />
-            <span className="block truncate bg-link/15 py-[3px] pr-1.5 pl-2 font-mono text-[14px] text-[#f0f2f5]">
+            <span aria-hidden className="absolute top-0 bottom-0 -left-px w-[2px] bg-human" />
+            {/* mobile wraps the full task — nothing the human said gets cut;
+                desktop has the width to keep it on one line */}
+            <span className="block bg-human/10 py-[3px] pr-1.5 pl-2 font-mono text-[14px] text-[#f0f2f5] md:truncate">
               {scenario.task}
             </span>
           </div>
           <span className="ml-auto hidden shrink-0 pl-3 font-mono text-[10px] text-[#636a76] md:block">
-            {(scenario.durationMs / 1000).toFixed(0)}s · {scenario.events.length} events
+            {(scenario.durationMs / 1000).toFixed(0)}s · {activeEvents.length} events
           </span>
         </div>
 
@@ -675,7 +861,7 @@ export function Player() {
             <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">actions</span>
               <span className="font-mono text-[10px] text-[#a9adb6]">
-                {state.lastEventIndex + 1}/{scenario.events.length} events
+                {firedCount}/{activeEvents.length} events
               </span>
             </div>
             <div
@@ -683,7 +869,7 @@ export function Player() {
               className="max-h-[240px] min-h-[160px] space-y-3 overflow-y-auto p-4 md:max-h-[320px] md:min-h-[320px]"
             >
               {state.blocks.map((b, i) => (
-                <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} />
+                <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} onPick={pick} />
               ))}
               {state.blocks.length === 0 && (
                 <div className="font-mono text-[12px] text-[#636a76]">waiting…</div>
@@ -716,35 +902,38 @@ export function Player() {
           </section>
         </div>
 
-        {/* Transport */}
-        <div className="flex items-center gap-3 border-t border-border px-4 py-2">
+        {/* Transport — ▶ is the one input. The run parks itself at each
+            decision; while a question waits, play disables and the
+            scrubber clamps. Answering is the only way forward. */}
+        <div className="flex items-center gap-2 border-t border-border px-4 py-2">
           <button
             onClick={() => {
               if (ended) {
                 setMs(0);
                 setPlaying(true);
-              } else {
+              } else if (!blocked) {
                 setPlaying((p) => !p);
               }
             }}
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border transition-colors ${
-              playing
-                ? "border-border text-muted hover:border-[#4d525e] hover:text-header-text"
-                : pristine
-                  ? "border-accent bg-accent text-[#16181d] hover:bg-accent/80"
-                  : "border-accent/60 text-accent hover:border-accent hover:bg-accent hover:text-[#16181d]"
-            }`}
+            disabled={blocked}
+            className="flex h-8 shrink-0 items-center gap-2 rounded-sm border-b-2 border-[#5fad74] bg-accent pr-1.5 pl-3 font-mono text-[12px] font-medium text-[#16181d] transition-colors enabled:hover:bg-[#5fad74] disabled:opacity-40"
             aria-label={ended ? "replay" : playing ? "pause" : "play"}
           >
-            {ended ? <RotateCcw size={12} /> : playing ? <Pause size={12} /> : <Play size={12} />}
+            {ended ? <RotateCcw size={13} /> : playing ? <Pause size={13} /> : <Play size={13} />}
+            {ended ? "replay" : playing ? "pause" : "play"}
+            {/* the shortcut rides inside the button, Zed style — no keyboard
+                on touch, so the chip stays desktop-only */}
+            <kbd className="rounded-[3px] border border-[#16181d]/35 px-[5px] py-px text-[10px] leading-none max-md:hidden">
+              space
+            </kbd>
           </button>
           <Scrubber
             ms={ms}
             duration={scenario.durationMs}
-            ticks={scenario.events.map((e) => e.at)}
+            ticks={activeEvents.map((e) => e.at)}
             onScrub={(m) => {
               setPlaying(false);
-              setMs(m);
+              setMs(Math.min(m, maxMs));
             }}
           />
           {/* current time bright, total dim — the number that moves leads */}
@@ -759,15 +948,24 @@ export function Player() {
           {chapters.map((ch, i) => {
             const next = chapters[i + 1]?.at ?? Infinity;
             const active = ms >= ch.at && ms < next;
+            // beyond the unanswered decision: future you haven't earned yet
+            const reachable = ch.at <= maxMs;
             return (
               <button
                 key={`${ch.at}-${ch.label}`}
+                disabled={!reachable}
                 onClick={() => {
-                  setMs(ch.at);
-                  setPlaying(true);
+                  // land held just past the beat so its entrance has settled;
+                  // never past the wall — the decision must be answered here
+                  setPlaying(false);
+                  setMs(Math.min(ch.at + HOLD_MS, scenario.durationMs, maxMs));
                 }}
                 className={`flex items-center gap-1.5 py-1 font-mono text-[10px] tracking-wide uppercase ${
-                  active ? "text-header-text" : "text-[#636a76] hover:text-muted"
+                  active
+                    ? "text-header-text"
+                    : reachable
+                      ? "text-[#636a76] hover:text-muted"
+                      : "cursor-default text-[#3f434d]"
                 }`}
               >
                 <span className={active ? "text-accent" : ""}>
@@ -785,18 +983,30 @@ export function Player() {
         {/* Status bar */}
         <div className="flex items-center justify-between border-t border-border bg-surface px-3 py-1.5 font-mono text-[10px]">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[#dcdfe3]">
+            <span
+              className={`flex items-center gap-1.5 ${
+                yourCall && !playing ? "text-human" : "text-[#dcdfe3]"
+              }`}
+            >
               <span
                 aria-hidden
                 className={`h-1.5 w-1.5 rounded-full ${
                   ended
                     ? "border border-accent"
-                    : playing
-                      ? "bg-accent"
-                      : "bg-[#636a76]"
+                    : yourCall && !playing
+                      ? "bg-human"
+                      : playing
+                        ? "bg-accent"
+                        : "bg-[#636a76]"
                 }`}
               />
-              {ended ? "done" : playing ? "playing" : "paused"}
+              {ended
+                ? "done"
+                : yourCall && !playing
+                  ? "your call"
+                  : playing
+                    ? "playing"
+                    : "paused"}
             </span>
             <span aria-hidden className="text-[#4d525e]">
               ·
@@ -806,9 +1016,23 @@ export function Player() {
               {String(scenarios.length).padStart(2, "0")}
             </span>
           </div>
-          <span className="hidden text-[#a9adb6] md:block">
-            space play · ← → scrub · 1–3 runs
-          </span>
+          {/* keyboard hints, Zed palette style: key in a chip, action in dim
+              text, hairline dividers between groups */}
+          <div className="hidden items-center gap-2.5 md:flex">
+            <span className="flex items-center gap-1.5">
+              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dcdfe3]">
+                ← →
+              </kbd>
+              <span className="text-[#a9adb6]">scrub</span>
+            </span>
+            <span aria-hidden className="h-3 w-px bg-border" />
+            <span className="flex items-center gap-1.5">
+              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dcdfe3]">
+                1–3
+              </kbd>
+              <span className="text-[#a9adb6]">runs</span>
+            </span>
+          </div>
         </div>
       </div>
       </div>

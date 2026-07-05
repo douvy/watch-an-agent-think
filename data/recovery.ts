@@ -1,9 +1,12 @@
 import type { Scenario } from "@/lib/timeline";
 
 // Scenario 2 — The Recovery. The shareable moment: Plan A grays and dies.
-// The pivot thought does the teaching: symptom vs cause, stated explicitly,
-// so no viewer leaves thinking the agent got lucky on attempt two.
-// Dead-end trimmed to one combined tool_call per review.
+// After the fix fails, a `choice` hands the pivot to the reader: dig deeper
+// into the logs, or reproduce the failure directly. The logs branch is the
+// honest dead end — 200 more lines of the same symptom — so both paths
+// arrive at the same truth: the plan was built on a misread symptom, and
+// it dies. Both branches are hand-written into the same time window; the
+// spine rejoins at plan_dead with tokens ≥ either branch's endpoint.
 // `narration` = the mascot's storyteller line for each beat, hand-written.
 
 export const recovery: Scenario = {
@@ -11,7 +14,7 @@ export const recovery: Scenario = {
   title: "A Plan Fails",
   task: "/api/orders is returning 500s — fix it.",
   lesson: "recovery means distrusting your plan",
-  durationMs: 58000,
+  durationMs: 62500,
   events: [
     { at: 0, tokensAfter: 700, type: "plan", planId: "p1",
       narration: "The API is failing. I start with the logs.",
@@ -46,13 +49,41 @@ export const recovery: Scenario = {
       input: "curl -s -o /dev/null -w '%{http_code}' localhost:3000/api/orders" },
     { at: 19500, tokensAfter: 1850, type: "tool_result", callId: "t3", ok: false, output: "500",
       narration: "Still broken. My theory was wrong." },
-    { at: 22000, tokensAfter: 1950, type: "thought",
-      narration: "The key move: I stop trusting my own plan.",
-      text: "The fix didn't work — the timeout is a symptom, not the cause. Stop reading about the error. Reproduce it." },
-    { at: 24500, tokensAfter: 1960, type: "plan_dead", planId: "p1",
+    { at: 21500, tokensAfter: 1900, type: "choice", choiceId: "recovery-pivot",
+      narration: "The fix didn't work. You call the next move.",
+      prompt: "Still 500. Where do I look next?",
+      options: [
+        { id: "reproduce", label: "reproduce the failure directly" },
+        { id: "logs", label: "dig deeper into the logs" },
+      ]},
+    // -- both branches live interleaved in the same window, sorted by `at`;
+    //    only the picked one fires. logs = the honest dead end; reproduce =
+    //    straight to the pivot. Both end at the same conclusion.
+    { at: 23000, tokensAfter: 1950, type: "tool_call", id: "t10", tool: "bash",
+      branch: { choice: "recovery-pivot", option: "logs" },
+      narration: "We go deeper into the logs.",
+      input: "tail -n 200 logs/api.log" },
+    { at: 23500, tokensAfter: 2000, type: "thought",
+      branch: { choice: "recovery-pivot", option: "reproduce" },
+      narration: "Right call — evidence over theory.",
+      text: "Reading about the error hasn't helped. Trigger it myself and watch what actually breaks." },
+    { at: 25500, tokensAfter: 2600, type: "tool_result", callId: "t10", ok: true,
+      branch: { choice: "recovery-pivot", option: "logs" },
+      narration: "Two hundred lines, zero new facts.",
+      output: "the same DB timeout, 41 more times — nothing new" },
+    { at: 26500, tokensAfter: 2100, type: "thought",
+      branch: { choice: "recovery-pivot", option: "reproduce" },
+      narration: "I stop patching the theory and drop it.",
+      text: "The pool-size theory dies here. The plan built on it dies with it." },
+    { at: 27500, tokensAfter: 2650, type: "thought",
+      branch: { choice: "recovery-pivot", option: "logs" },
+      narration: "The logs are a mirror, not a window. I reproduce it.",
+      text: "More lines describe the same symptom. Logs won't surface the cause — reproducing it will." },
+    // -- spine rejoins: both paths killed the plan ----------------------------
+    { at: 29000, tokensAfter: 2700, type: "plan_dead", planId: "p1",
       narration: "I kill the plan. It was built on a guess.",
       reason: "built on a misread symptom" },
-    { at: 27000, tokensAfter: 2250, type: "plan", planId: "p2",
+    { at: 31500, tokensAfter: 2950, type: "plan", planId: "p2",
       narration: "New plan — reproduce the failure directly.",
       steps: [
       "Reproduce the failure directly",
@@ -60,37 +91,37 @@ export const recovery: Scenario = {
       "Fix the real cause",
       "Verify 200s",
     ]},
-    { at: 29000, tokensAfter: 2260, type: "step_active", planId: "p2", step: 0 },
-    { at: 30000, tokensAfter: 2310, type: "tool_call", id: "t4", tool: "bash", input: "curl -s localhost:3000/api/orders | head",
+    { at: 33500, tokensAfter: 2960, type: "step_active", planId: "p2", step: 0 },
+    { at: 34500, tokensAfter: 3000, type: "tool_call", id: "t4", tool: "bash", input: "curl -s localhost:3000/api/orders | head",
       narration: "I trigger the error and watch it happen." },
-    { at: 33000, tokensAfter: 3050, type: "tool_result", callId: "t4", ok: false,
+    { at: 37500, tokensAfter: 3750, type: "tool_result", callId: "t4", ok: false,
       narration: "The real bug — a crash, not a timeout.",
       output: "TypeError: Cannot read properties of null (reading 'email') — order.user.email, orders.ts:41" },
-    { at: 34500, tokensAfter: 3060, type: "step_done", planId: "p2", step: 0 },
-    { at: 35000, tokensAfter: 3070, type: "step_active", planId: "p2", step: 1 },
-    { at: 36000, tokensAfter: 3130, type: "thought",
+    { at: 39000, tokensAfter: 3760, type: "step_done", planId: "p2", step: 0 },
+    { at: 39500, tokensAfter: 3770, type: "step_active", planId: "p2", step: 1 },
+    { at: 40500, tokensAfter: 3830, type: "thought",
       narration: "The timeouts were noise. This is the cause.",
       text: "Orders with deleted users. The timeouts were downstream noise — retries piling up behind the crash." },
-    { at: 38500, tokensAfter: 3140, type: "step_done", planId: "p2", step: 1 },
-    { at: 39000, tokensAfter: 3150, type: "step_active", planId: "p2", step: 2 },
-    { at: 40000, tokensAfter: 3200, type: "tool_call", id: "t5", tool: "read", input: "orders.ts:30-50",
+    { at: 43000, tokensAfter: 3840, type: "step_done", planId: "p2", step: 1 },
+    { at: 43500, tokensAfter: 3850, type: "step_active", planId: "p2", step: 2 },
+    { at: 44500, tokensAfter: 3900, type: "tool_call", id: "t5", tool: "read", input: "orders.ts:30-50",
       narration: "I read the crashing code before touching it." },
-    { at: 42500, tokensAfter: 3900, type: "tool_result", callId: "t5", ok: true,
+    { at: 47000, tokensAfter: 4600, type: "tool_result", callId: "t5", ok: true,
       narration: "It assumes a user that isn't always there.",
       output: "user joined without a null check — guests and deleted accounts arrive as null" },
-    { at: 44500, tokensAfter: 3950, type: "tool_call", id: "t6", tool: "edit",
+    { at: 49000, tokensAfter: 4650, type: "tool_call", id: "t6", tool: "edit",
       narration: "The real fix: stop assuming the user exists.",
       input: "orders.ts — guard null user, fall back to order.contactEmail" },
-    { at: 47000, tokensAfter: 4100, type: "tool_result", callId: "t6", ok: true, output: "1 file changed" },
-    { at: 48000, tokensAfter: 4110, type: "step_done", planId: "p2", step: 2 },
-    { at: 48500, tokensAfter: 4120, type: "step_active", planId: "p2", step: 3 },
-    { at: 49500, tokensAfter: 4170, type: "tool_call", id: "t7", tool: "bash",
+    { at: 51500, tokensAfter: 4800, type: "tool_result", callId: "t6", ok: true, output: "1 file changed" },
+    { at: 52500, tokensAfter: 4810, type: "step_done", planId: "p2", step: 2 },
+    { at: 53000, tokensAfter: 4820, type: "step_active", planId: "p2", step: 3 },
+    { at: 54000, tokensAfter: 4870, type: "tool_call", id: "t7", tool: "bash",
       narration: "The same check that failed before.",
       input: "curl -s -o /dev/null -w '%{http_code}' localhost:3000/api/orders" },
-    { at: 52500, tokensAfter: 4300, type: "tool_result", callId: "t7", ok: true, output: "200",
+    { at: 57000, tokensAfter: 5000, type: "tool_result", callId: "t7", ok: true, output: "200",
       narration: "It passes — because I let plan A die." },
-    { at: 54000, tokensAfter: 4310, type: "step_done", planId: "p2", step: 3 },
-    { at: 56000, tokensAfter: 4350, type: "done", verdict: "recovery means distrusting your plan",
+    { at: 58500, tokensAfter: 5010, type: "step_done", planId: "p2", step: 3 },
+    { at: 60500, tokensAfter: 5050, type: "done", verdict: "recovery means distrusting your plan",
       narration: "Done. Scrub back and watch the plan die." },
   ],
 };

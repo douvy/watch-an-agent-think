@@ -14,8 +14,12 @@
   --border: #474b56;
   --accent: #84f0a1;
   --accent-subtle: #84f0a150;
+  /* mint at a whisper — same lightness/saturation as #deeafd, hue swapped to ours */
+  --accent-light: #ddfde6;
   --accent-negative: #d45a2b;
   --warning: #ffffc9;
+  /* the human's player color — same warm paper as their text selection */
+  --human: #eceae0;
   --muted: #7b7e8a;
   --header-text: #d9dce0;
   --hover-bg: #383d47;
@@ -29,8 +33,10 @@
   --color-well: var(--well);
   --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
   --color-accent-negative: var(--accent-negative);
   --color-warning: var(--warning);
+  --color-human: var(--human);
   --color-muted: var(--muted);
   --color-header-text: var(--header-text);
   --color-hover-bg: var(--hover-bg);
@@ -53,6 +59,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Steady numerals — timers and gauges don't jitter */
   font-variant-numeric: tabular-nums;
+}
+
+/* Selection in warm paper, not browser blue */
+::selection {
+  background: #eceae0;
+  color: #16181d;
 }
 
 /* Fix mobile touch delays */

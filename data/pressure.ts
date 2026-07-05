@@ -1,9 +1,12 @@
 import type { Scenario } from "@/lib/timeline";
 
-// Scenario 3 — The Pressure. Context gauge fills to ~85%, then the agent
-// compacts: completed work squeezes into a summary card, tokens drop
-// 6,800 → 1,900. Middle batched per review (3 files shown, counter implies
-// the rest). Post-compaction thought preserves the honesty: detail is lost.
+// Scenario 3 — The Pressure. Context gauge fills to ~85%, then a `choice`
+// hands the call to the reader: compress now, or keep every detail. The
+// keep branch is the honest wall — the next edit fails with a context
+// overflow, and the work is lost — so both paths arrive at the same
+// compact. Refusing to forget costs a file; the lesson survives either
+// pick. Both branches are hand-written into the same time window.
+// Middle batched per review (3 files shown, counter implies the rest).
 // `narration` = the mascot's storyteller line for each beat, hand-written.
 
 export const pressure: Scenario = {
@@ -11,7 +14,7 @@ export const pressure: Scenario = {
   title: "Memory Fills Up",
   task: "Rename getUser → fetchUser across the codebase — 14 files.",
   lesson: "long tasks are won by forgetting well",
-  durationMs: 60000,
+  durationMs: 65000,
   events: [
     { at: 0, tokensAfter: 800, type: "plan", planId: "p1",
       narration: "Fourteen files. Not hard — just long.",
@@ -48,38 +51,66 @@ export const pressure: Scenario = {
       input: "auth.ts, cart.ts, nav.tsx, search.ts, feed.tsx — 17 call sites" },
     { at: 24500, tokensAfter: 6400, type: "tool_result", callId: "t5", ok: true, output: "renamed (8/14)",
       narration: "Faster on files, heavier on memory." },
-    { at: 27000, tokensAfter: 6800, type: "thought",
-      narration: "85% full. I can't afford every detail.",
-      text: "Context is at 85% and six files remain. Time to compress." },
-    { at: 29500, tokensAfter: 1900, type: "compact",
+    { at: 27000, tokensAfter: 6800, type: "choice", choiceId: "pressure-memory",
+      narration: "85% full. Your call: compress, or keep every detail?",
+      prompt: "Memory is at 85% with six files left. What do I do?",
+      options: [
+        { id: "compress", label: "compress — trade detail for room" },
+        { id: "keep", label: "keep every detail" },
+      ]},
+    // -- both branches live interleaved in the same window, sorted by `at`;
+    //    only the picked one fires. keep = the honest wall: the next edit
+    //    overflows and its work is lost. Both paths arrive at the compact.
+    { at: 28500, tokensAfter: 6850, type: "thought",
+      branch: { choice: "pressure-memory", option: "compress" },
+      narration: "We compress. Watch the gauge fall.",
+      text: "Good — I fold the finished work into a summary and free the room." },
+    { at: 28500, tokensAfter: 7100, type: "tool_call", id: "t10", tool: "edit",
+      branch: { choice: "pressure-memory", option: "keep" },
+      narration: "We keep everything. I push on, nearly full.",
+      input: "billing.ts + admin.ts — 6 call sites" },
+    { at: 31000, tokensAfter: 7900, type: "tool_result", callId: "t10", ok: false,
+      branch: { choice: "pressure-memory", option: "keep" },
+      narration: "Too full to even finish the edit. That's the wall.",
+      output: "context overflow — response truncated, edit incomplete" },
+    { at: 31200, tokensAfter: 6900, type: "thought",
+      branch: { choice: "pressure-memory", option: "compress" },
+      narration: "Finished work folds down to a sentence.",
+      text: "What's finished can live as one line each. What's left is six file names." },
+    { at: 32800, tokensAfter: 7950, type: "thought",
+      branch: { choice: "pressure-memory", option: "keep" },
+      narration: "Now I compress because I must. That's what refusing to forget costs.",
+      text: "I hit the ceiling mid-edit and the work was lost. Compacting isn't optional — it's how I keep going." },
+    // -- spine rejoins: both paths compact, still at 8/14 -----------------------
+    { at: 34000, tokensAfter: 1900, type: "compact",
       narration: "So I compress — keep the summary, drop the rest.",
       summary: "8/14 files renamed — call-site detail summarized. Remaining: billing.ts, admin.ts, jobs/sync.ts, cli.ts, tests ×2" },
-    { at: 32000, tokensAfter: 1950, type: "thought",
+    { at: 36500, tokensAfter: 1950, type: "thought",
       narration: "I work from my own notes now. That's the trade.",
       text: "Working from my summary now — the details are gone." },
-    { at: 34500, tokensAfter: 2000, type: "tool_call", id: "t6", tool: "edit",
+    { at: 39000, tokensAfter: 2000, type: "tool_call", id: "t6", tool: "edit",
       narration: "The summary tells me what's left. It's enough.",
       input: "billing.ts, admin.ts, jobs/sync.ts — 9 call sites" },
-    { at: 37500, tokensAfter: 2900, type: "tool_result", callId: "t6", ok: true, output: "renamed (11/14)" },
-    { at: 39500, tokensAfter: 2950, type: "tool_call", id: "t7", tool: "edit",
+    { at: 42000, tokensAfter: 2900, type: "tool_result", callId: "t6", ok: true, output: "renamed (11/14)" },
+    { at: 44000, tokensAfter: 2950, type: "tool_call", id: "t7", tool: "edit",
       input: "cli.ts + tests — 12 call sites" },
-    { at: 42500, tokensAfter: 3800, type: "tool_result", callId: "t7", ok: true, output: "renamed (14/14)",
+    { at: 47000, tokensAfter: 3800, type: "tool_result", callId: "t7", ok: true, output: "renamed (14/14)",
       narration: "All fourteen done, on a fraction of the memory." },
-    { at: 44000, tokensAfter: 3810, type: "step_done", planId: "p1", step: 1 },
-    { at: 44500, tokensAfter: 3820, type: "step_active", planId: "p1", step: 2 },
-    { at: 45500, tokensAfter: 3870, type: "tool_call", id: "t8", tool: "edit",
+    { at: 48500, tokensAfter: 3810, type: "step_done", planId: "p1", step: 1 },
+    { at: 49000, tokensAfter: 3820, type: "step_active", planId: "p1", step: 2 },
+    { at: 50000, tokensAfter: 3870, type: "tool_call", id: "t8", tool: "edit",
       narration: "One loose end: the shared export list.",
       input: "index.ts — export fetchUser" },
-    { at: 47500, tokensAfter: 4100, type: "tool_result", callId: "t8", ok: true, output: "barrel updated" },
-    { at: 48500, tokensAfter: 4110, type: "step_done", planId: "p1", step: 2 },
-    { at: 49000, tokensAfter: 4120, type: "step_active", planId: "p1", step: 3 },
-    { at: 50000, tokensAfter: 4170, type: "tool_call", id: "t9", tool: "bash",
+    { at: 52000, tokensAfter: 4100, type: "tool_result", callId: "t8", ok: true, output: "barrel updated" },
+    { at: 53000, tokensAfter: 4110, type: "step_done", planId: "p1", step: 2 },
+    { at: 53500, tokensAfter: 4120, type: "step_active", planId: "p1", step: 3 },
+    { at: 54500, tokensAfter: 4170, type: "tool_call", id: "t9", tool: "bash",
       narration: "Last step: prove the build still works.",
       input: "tsc --noEmit && npm test" },
-    { at: 54000, tokensAfter: 4800, type: "tool_result", callId: "t9", ok: true, output: "0 errors, 47 passed",
+    { at: 58500, tokensAfter: 4800, type: "tool_result", callId: "t9", ok: true, output: "0 errors, 47 passed",
       narration: "Everything passes. The rename is real." },
-    { at: 55500, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
-    { at: 58000, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
+    { at: 60000, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
+    { at: 62500, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
       narration: "Done — I finished because I forgot well." },
   ],
 };

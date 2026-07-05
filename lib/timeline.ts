@@ -1,13 +1,31 @@
 // Timeline event schema. Everything on screen is a pure function of
-// (scenario, timeline position). Errors are tool_results with ok: false;
-// replans are plan_dead + a new plan — no separate event types.
+// (scenario, timeline position, the reader's choices). Errors are
+// tool_results with ok: false; replans are plan_dead + a new plan —
+// no separate event types.
 
 export const CONTEXT_BUDGET = 8000;
+
+// Decision beats: a `choice` event parks the clock and asks the reader.
+// Beats tagged with `branch` fire only when their choice resolved their
+// way — both branches are hand-written into the same time window, so the
+// timeline's duration and rhythm never depend on what the reader picked.
+export type ChoiceOption = { id: string; label: string };
+
+/** The reader's picks, keyed by choiceId. Unanswered choices resolve to
+    the first option — the canonical path — so the world is always fully
+    determined: same (ms, choices) in, same frame out. */
+export type Choices = Record<string, string>;
 
 // `narration` is the storyteller line for the hero marquee — hand-written
 // per beat, in the mascot's first-person voice. Events without one fall
 // back to a generic line per event type.
-export type TimelineEvent = { at: number; tokensAfter: number; narration?: string } & (
+export type TimelineEvent = {
+  at: number;
+  tokensAfter: number;
+  narration?: string;
+  /** Branch beats fire only when the named choice resolved to this option. */
+  branch?: { choice: string; option: string };
+} & (
   | { type: "plan"; planId: string; steps: string[] }
   | { type: "step_active"; planId: string; step: number }
   | { type: "step_done"; planId: string; step: number }
@@ -16,6 +34,7 @@ export type TimelineEvent = { at: number; tokensAfter: number; narration?: strin
   | { type: "tool_result"; callId: string; ok: boolean; output: string }
   | { type: "plan_dead"; planId: string; reason: string }
   | { type: "compact"; summary: string }
+  | { type: "choice"; choiceId: string; prompt: string; options: ChoiceOption[] }
   | { type: "done"; verdict: string }
 );
 
@@ -26,6 +45,22 @@ export interface Scenario {
   lesson: string;
   durationMs: number;
   events: TimelineEvent[];
+}
+
+/** Fill unanswered choices with their first option — the canonical path. */
+export function resolveChoices(scenario: Scenario, choices: Choices): Choices {
+  const resolved: Choices = { ...choices };
+  for (const e of scenario.events) {
+    if (e.type === "choice" && !(e.choiceId in resolved)) {
+      resolved[e.choiceId] = e.options[0].id;
+    }
+  }
+  return resolved;
+}
+
+/** A branch-tagged event fires only when its choice resolved its way. */
+export function eventActive(e: TimelineEvent, resolved: Choices): boolean {
+  return !e.branch || resolved[e.branch.choice] === e.branch.option;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +97,15 @@ export type Block =
       absorbedAt?: number;
     }
   | { kind: "compact"; at: number; summary: string }
+  | {
+      kind: "choice";
+      at: number;
+      choiceId: string;
+      prompt: string;
+      options: ChoiceOption[];
+      /** The reader's explicit pick; undefined while the question is live. */
+      picked?: string;
+    }
   | { kind: "done"; at: number; verdict: string };
 
 export interface TimelineState {
@@ -76,7 +120,8 @@ export interface TimelineState {
   lastEventIndex: number;
 }
 
-export function stateAt(scenario: Scenario, ms: number): TimelineState {
+export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): TimelineState {
+  const resolved = resolveChoices(scenario, choices);
   const plans: PlanView[] = [];
   const blocks: Block[] = [];
   let tokens = 0;
@@ -88,6 +133,7 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
   for (let i = 0; i < scenario.events.length; i++) {
     const e = scenario.events[i];
     if (e.at > ms) break;
+    if (!eventActive(e, resolved)) continue;
     lastEventIndex = i;
     tokensPrev = tokens;
     tokens = e.tokensAfter;
@@ -146,6 +192,16 @@ export function stateAt(scenario: Scenario, ms: number): TimelineState {
           }
         }
         blocks.push({ kind: "compact", at: e.at, summary: e.summary });
+        break;
+      case "choice":
+        blocks.push({
+          kind: "choice",
+          at: e.at,
+          choiceId: e.choiceId,
+          prompt: e.prompt,
+          options: e.options,
+          picked: choices[e.choiceId],
+        });
         break;
       case "done":
         done = e.verdict;

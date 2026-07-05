@@ -8,14 +8,16 @@ import type { TimelineState } from "@/lib/timeline";
 //   focus      — a tool is running: arms type, squint down at the work
 //   setback    — a tool just failed: red !, ears flatten, red wince
 //   compacting — right after a compact: eyes squeezed shut, ears flat
+//   asking     — a choice is live: yellow ?, ears up, steady eyes on you
 //   done       — ears up, eyes open, small smile
 
-type Mood = "done" | "setback" | "compacting" | "focus" | "idle";
+type Mood = "done" | "setback" | "compacting" | "asking" | "focus" | "idle";
 
 const BODY = "#3a3f4a";
 const PATCH = "#555b68";
 const GREEN = "#84f0a1";
 const RED = "#d45a2b";
+const YELLOW = "#ffffc9";
 const DOT = "#7b7e8a";
 
 function moodOf(state: TimelineState, ms: number): Mood {
@@ -33,6 +35,8 @@ function moodOf(state: TimelineState, ms: number): Mood {
   for (const b of state.blocks) {
     if (b.kind === "compact" && ms - b.at < 2200) return "compacting";
   }
+  if (state.blocks.some((b) => b.kind === "choice" && b.picked === undefined))
+    return "asking";
   if (state.blocks.some((b) => b.kind === "tool" && b.pending)) return "focus";
   return "idle";
 }
@@ -107,6 +111,15 @@ export function Creature({
         <g fill={RED}>
           <rect x="8" y="0" width="1" height="2" />
           <rect x="8" y="3" width="1" height="1" />
+        </g>
+      )}
+
+      {/* asking: yellow question mark — it's waiting on you */}
+      {mood === "asking" && (
+        <g fill={YELLOW}>
+          <rect x="7" y="0" width="2" height="1" />
+          <rect x="9" y="1" width="1" height="1" />
+          <rect x="8" y="2" width="1" height="1" />
         </g>
       )}
 
