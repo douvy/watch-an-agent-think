@@ -41,6 +41,75 @@ function moodOf(state: TimelineState, ms: number): Mood {
   return "idle";
 }
 
+// The finale face — the trilogy-complete payoff. Arms up, star eyes, a
+// crown, sparkles. The pose is static (this only renders while the clock
+// is parked at an end frame, where f(ms) motion would freeze); the
+// sparkles twinkle on a CSS steps() beat — see globals.css — so the
+// pixels still move frame-by-frame, never ease.
+export function CreatureTriumph({ size = 44 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={(size * 21) / 16}
+      viewBox="0 -5 16 21"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      {/* sparkles — two plus-stars and two motes, on alternating beats */}
+      <g fill={GREEN}>
+        <g className="twinkle">
+          <rect x="1" y="-4" width="1" height="1" />
+          <rect x="0" y="-3" width="3" height="1" />
+          <rect x="1" y="-2" width="1" height="1" />
+        </g>
+        <g className="twinkle-late">
+          <rect x="14" y="-4" width="1" height="1" />
+          <rect x="13" y="-3" width="3" height="1" />
+          <rect x="14" y="-2" width="1" height="1" />
+        </g>
+        <rect className="twinkle-late" x="5" y="-1" width="1" height="1" />
+        <rect className="twinkle" x="10" y="-2" width="1" height="1" />
+      </g>
+      {/* crown — seated between the ears */}
+      <g fill={YELLOW}>
+        <rect x="6" y="2" width="1" height="1" />
+        <rect x="9" y="2" width="1" height="1" />
+        <rect x="6" y="3" width="4" height="1" />
+      </g>
+      <g fill={BODY}>
+        {/* ears up */}
+        <rect x="3" y="1" width="1" height="1" />
+        <rect x="3" y="2" width="2" height="1" />
+        <rect x="3" y="3" width="3" height="1" />
+        <rect x="12" y="1" width="1" height="1" />
+        <rect x="11" y="2" width="2" height="1" />
+        <rect x="10" y="3" width="3" height="1" />
+        {/* body */}
+        <rect x="2" y="4" width="12" height="8" />
+        {/* arms raised */}
+        <rect x="0" y="1" width="2" height="3" />
+        <rect x="14" y="1" width="2" height="3" />
+        {/* legs */}
+        <rect x="2" y="12" width="2" height="1" />
+        <rect x="5" y="12" width="2" height="1" />
+        <rect x="9" y="12" width="2" height="1" />
+        <rect x="12" y="12" width="2" height="1" />
+      </g>
+      <rect x="3" y="5" width="10" height="4" fill={PATCH} />
+      {/* star eyes — plus-shaped, the pixel idiom for delight */}
+      <g fill={GREEN}>
+        <rect x="6" y="5" width="1" height="1" />
+        <rect x="5" y="6" width="3" height="1" />
+        <rect x="6" y="7" width="1" height="1" />
+        <rect x="10" y="5" width="1" height="1" />
+        <rect x="9" y="6" width="3" height="1" />
+        <rect x="10" y="7" width="1" height="1" />
+      </g>
+      <rect x="6" y="8" width="4" height="1" fill={BODY} />
+    </svg>
+  );
+}
+
 export function Creature({
   state,
   ms,

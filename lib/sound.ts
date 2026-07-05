@@ -44,7 +44,7 @@ function blip(
   osc.stop(t + dur + 0.02);
 }
 
-export type Chirp = "move" | "ok" | "fail" | "ask" | "compact" | "done";
+export type Chirp = "move" | "ok" | "fail" | "ask" | "compact" | "done" | "fanfare";
 
 // Footsteps random-walk a pentatonic scale — every step lands on a
 // different note, so he hums his way through the run instead of
@@ -80,6 +80,15 @@ export function chirp(kind: Chirp) {
       blip(659, 0.07, 0.07, 0.04);
       blip(784, 0.14, 0.07, 0.04);
       blip(1046, 0.21, 0.16, 0.04);
+      break;
+    case "fanfare": // trilogy complete — the 1-up, answered an octave up
+      blip(523, 0, 0.07, 0.04);
+      blip(659, 0.07, 0.07, 0.04);
+      blip(784, 0.14, 0.07, 0.04);
+      blip(1046, 0.21, 0.12, 0.04);
+      blip(784, 0.36, 0.06, 0.03);
+      blip(1046, 0.42, 0.08, 0.04);
+      blip(1318, 0.5, 0.22, 0.045);
       break;
   }
 }

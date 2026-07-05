@@ -16,7 +16,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { scenarios } from "@/data";
-import { Creature } from "@/components/Creature";
+import { Creature, CreatureTriumph } from "@/components/Creature";
 import { chirp } from "@/lib/sound";
 import { createSpring, presets } from "@/lib/spring";
 import {
@@ -493,6 +493,8 @@ export function Player() {
   // the tab ticks, so the trilogy reads as collectible. Meta-state like the
   // sound toggle, deliberately outside the pure (ms, choices) world.
   const [watched, setWatched] = useState<number[]>([]);
+  // The set is complete — the ticks' promised payoff.
+  const trilogy = watched.length === scenarios.length;
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -719,10 +721,36 @@ export function Player() {
             : e.type === "compact"
               ? "compact"
               : e.type === "done"
-                ? "done"
+                ? // this done completes the trilogy — the 1-up gets an answer.
+                  // `watched` here is still the pre-completion set: setWatched
+                  // lands next render, where the lastEventIndex guard above
+                  // keeps this from chirping twice.
+                  watched.length === scenarios.length - 1 && !watched.includes(idx)
+                  ? "fanfare"
+                  : "done"
                 : "move",
     );
-  }, [state.lastEventIndex, sound, playing, scenario]);
+  }, [state.lastEventIndex, sound, playing, scenario, watched, idx]);
+
+  // Per-run session memory — editor-tab semantics: switching away parks a
+  // run where you left it (position and picks); coming back restores it
+  // paused instead of restarting. Only unvisited runs start fresh and play.
+  // Replay is one click if you want the top. A ref, not state: it's only
+  // read at switch time.
+  const parkedRef = useRef<Record<number, { ms: number; choices: Choices }>>({});
+  const select = useCallback(
+    (i: number) => {
+      if (i === idx) return;
+      setRewrite(null);
+      parkedRef.current[idx] = { ms, choices };
+      const parked = parkedRef.current[i];
+      setIdx(i);
+      setMs(parked?.ms ?? 0);
+      setChoices(parked?.choices ?? {});
+      setPlaying(!parked);
+    },
+    [idx, ms, choices],
+  );
 
   // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
   useEffect(() => {
@@ -750,18 +778,12 @@ export function Player() {
         setMs(Math.max(0, ms - 2000));
       } else {
         const n = Number(e.key);
-        if (n >= 1 && n <= scenarios.length) {
-          setRewrite(null);
-          setIdx(n - 1);
-          setMs(0);
-          setChoices({});
-          setPlaying(true);
-        }
+        if (n >= 1 && n <= scenarios.length) select(n - 1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [ms, playing, blocked, maxMs, scenario.durationMs]);
+  }, [ms, playing, blocked, maxMs, scenario.durationMs, select]);
 
   // Chat-style follow: the stream tracks the newest block while the reader
   // sits pinned near the bottom — playing, scrubbing, or mid-rewrite alike —
@@ -798,15 +820,6 @@ export function Player() {
   const pct = clamp01(displayTokens / CONTEXT_BUDGET);
   const gaugeColor =
     pct > 0.9 ? "bg-accent-negative" : pct > 0.75 ? "bg-warning" : "bg-accent";
-
-  // Picking a run starts it — it plays to its first decision and waits.
-  const select = (i: number) => {
-    setRewrite(null);
-    setIdx(i);
-    setMs(0);
-    setChoices({});
-    setPlaying(true);
-  };
 
   return (
     <>
@@ -1047,9 +1060,9 @@ export function Player() {
               )}
               {/* End-card — the teachable moment is completion, not arrival:
                   when a run finishes, point at the next story. Pure f(ms):
-                  scrub back before done and it unrenders. The trilogy ends
-                  quietly — run 3 gets no nudge. */}
-              {state.done && idx < scenarios.length - 1 && (
+                  scrub back before done and it unrenders. Once the trilogy
+                  is complete the nudge retires — the finale takes its slot. */}
+              {state.done && !trilogy && idx < scenarios.length - 1 && (
                 <button
                   onClick={() => select(idx + 1)}
                   style={enterStyle(ms, state.lastEventAt + 600)}
@@ -1065,6 +1078,29 @@ export function Player() {
                     →
                   </span>
                 </button>
+              )}
+              {/* Trilogy finale — the ticks promised a payoff; this is it.
+                  Fires on whichever run completes the set and greets every
+                  end frame after: the collection acknowledged in the voice
+                  that carried the piece, right when the reader decides
+                  whether this was worth sharing. */}
+              {state.done && trilogy && (
+                <div
+                  style={enterStyle(ms, state.lastEventAt + 600)}
+                  className="flex w-full items-center gap-3.5 rounded-sm border border-accent/30 bg-surface px-3 py-3"
+                >
+                  <span className="shrink-0">
+                    <CreatureTriumph size={44} />
+                  </span>
+                  <span>
+                    <span className="label block text-accent">all three watched</span>
+                    <span className="mt-0.5 block font-serif text-[15px] leading-snug text-accent-light">
+                      That&apos;s all three ways I think — plan, recover,
+                      forget. Now you know what you&apos;re watching when you
+                      watch a real one.
+                    </span>
+                  </span>
+                </div>
               )}
               {/* What-if — hands the reader the branch flip they'd otherwise
                   never find: from the end frame, one click rewrites the whole

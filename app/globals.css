@@ -85,6 +85,34 @@ a {
   touch-action: manipulation;
 }
 
+/* The finale sprite's sparkles — the one CSS animation in the app. The
+   trilogy card only exists while the clock is parked at an end frame,
+   where f(ms) motion would freeze; steps() keeps the discrete pixel-frame
+   feel with no easing, so the house rule bends without breaking. */
+@keyframes twinkle {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+.twinkle {
+  animation: twinkle 1.1s steps(1) infinite;
+}
+.twinkle-late {
+  animation: twinkle 1.1s steps(1) infinite;
+  animation-delay: -0.55s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .twinkle,
+  .twinkle-late {
+    animation: none;
+  }
+}
+
 /* House label style: tiny uppercase captions */
 .label {
   font-size: 10px;
