@@ -1032,6 +1032,27 @@ export function Player() {
               {state.blocks.length === 0 && (
                 <div className="font-mono text-[12px] text-[#636a76]">waiting…</div>
               )}
+              {/* End-card — the teachable moment is completion, not arrival:
+                  when a run finishes, point at the next story. Pure f(ms):
+                  scrub back before done and it unrenders. The trilogy ends
+                  quietly — run 3 gets no nudge. */}
+              {state.done && idx < scenarios.length - 1 && (
+                <button
+                  onClick={() => select(idx + 1)}
+                  style={enterStyle(ms, state.lastEventAt + 600)}
+                  className="flex w-full items-center justify-between rounded-sm border border-border bg-surface px-3 py-2.5 text-left hover:border-accent/50"
+                >
+                  <span>
+                    <span className="label block">next run</span>
+                    <span className="font-serif text-[15px] text-accent-light">
+                      {scenarios[idx + 1].title}
+                    </span>
+                  </span>
+                  <span aria-hidden className="font-mono text-accent">
+                    →
+                  </span>
+                </button>
+              )}
             </div>
           </section>
 
