@@ -8,7 +8,7 @@ import { join } from "node:path";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt =
-  "Watch an AI agent think — plan A dies, plan B replaces it";
+  "Watch how an AI agent thinks — plan A dies, plan B replaces it";
 
 const planA = [
   "Check the server logs",
@@ -109,7 +109,7 @@ export default async function OpengraphImage() {
               color: "#d9dce0",
             }}
           >
-            Watch an AI agent think
+            Watch how an AI agent thinks
           </div>
 
           {/* the moment: plan A dead, plan B fresh */}

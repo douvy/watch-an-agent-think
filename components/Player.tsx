@@ -36,15 +36,18 @@ function chaptersOf(scenario: Scenario): { at: number; label: string }[] {
   return out;
 }
 
-// Narration — the subtitle track. Plain English for people who don't read
-// tool calls. Derived from the last narratable event, so scrubbing rewrites
-// it like captions. Sans voice: serif is the agent's, mono is the machine's,
-// this line is ours.
+// Narration — the storyteller track, in the mascot's first-person voice.
+// Its face already mirrors the run, so the line is the agent talking to you,
+// not a caption about it. Each scenario hand-writes its own lines
+// (event.narration); these generics are only the fallback. Derived from the
+// last narratable event, so scrubbing rewrites it like captions.
+const INTRO_NARRATION = "Hi — I'm an agent. Press play and watch me work.";
+
 const TOOL_NARRATION: Record<string, string> = {
-  bash: "It runs a command and waits on the machine.",
-  read: "It opens a file to see what's actually there.",
-  edit: "It changes the code.",
-  grep: "It searches the codebase for clues.",
+  bash: "I run a command and wait on the machine.",
+  read: "I open a file to see what's actually there.",
+  edit: "I change the code.",
+  grep: "I search the codebase for clues.",
 };
 
 function narrationOf(
@@ -52,45 +55,49 @@ function narrationOf(
   lastEventIndex: number,
 ): { at: number; text: string } {
   let plans = 0;
-  let out = { at: 0, text: "An agent is about to work through a real task. Press play." };
+  let out = { at: 0, text: INTRO_NARRATION };
   for (let i = 0; i <= lastEventIndex; i++) {
     const e = scenario.events[i];
+    if (e.type === "plan") plans++;
+    if (e.narration) {
+      out = { at: e.at, text: e.narration };
+      continue;
+    }
     switch (e.type) {
       case "plan":
-        plans++;
         out = {
           at: e.at,
           text:
             plans === 1
-              ? "First, it writes itself a plan."
-              : "It writes a new plan — a different approach this time.",
+              ? "First, I write myself a plan."
+              : "I write a new plan — a different approach this time.",
         };
         break;
       case "thought":
-        out = { at: e.at, text: "It reasons out loud before acting." };
+        out = { at: e.at, text: "I reason out loud before I act." };
         break;
       case "tool_call":
-        out = { at: e.at, text: TOOL_NARRATION[e.tool] ?? "It reaches for a tool." };
+        out = { at: e.at, text: TOOL_NARRATION[e.tool] ?? "I reach for a tool." };
         break;
       case "tool_result":
         out = {
           at: e.at,
           text: e.ok
-            ? "The result comes back clean. It keeps moving."
-            : "That didn't work. Watch its face.",
+            ? "The result comes back clean. I keep moving."
+            : "That didn't work. Watch my face.",
         };
         break;
       case "plan_dead":
-        out = { at: e.at, text: "The plan was built on a bad guess — it abandons it." };
+        out = { at: e.at, text: "My plan was built on a bad guess — I'm dropping it." };
         break;
       case "compact":
         out = {
           at: e.at,
-          text: "Its memory is nearly full, so it compresses what it knows.",
+          text: "My memory is nearly full, so I compress what I know.",
         };
         break;
       case "done":
-        out = { at: e.at, text: "Finished. Scrub back to see how it got here." };
+        out = { at: e.at, text: "Done. Scrub back to see how I got here." };
         break;
     }
   }
@@ -355,6 +362,11 @@ export function Player() {
   );
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
+  // Cover frame: every scenario plans at t=0, so without this the opener
+  // would be overwritten before anyone reads it. Until first play, the
+  // storyteller introduces itself instead.
+  const pristine = ms === 0 && !playing;
+  const shownNarration = pristine ? { at: 0, text: INTRO_NARRATION } : narration;
 
   // Deep link in: ?s=2&t=34 lands on that scenario at that second, then plays —
   // the sharer picked the moment, so arriving mid-thought is the point.
@@ -477,18 +489,15 @@ export function Player() {
         >
           +
         </span>
-        {/* Masthead — the title is a wordmark, not a billboard. The animated
-            marquee below is the hero. */}
+        {/* Masthead — one mono spec-sheet line, same voice as the machine's
+            labels. The storyteller marquee below is the biggest type on the
+            page; the brand stays quiet. */}
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="shrink-0 text-[15px] font-bold tracking-tight text-header-text md:text-[17px]">
-            Watch an AI agent think
-            <span className="label ml-3 hidden font-normal md:inline">
-              interactive explainer
-            </span>
+          <h1 className="shrink-0 font-mono text-[11px] font-medium tracking-[0.14em] text-header-text uppercase md:text-[12px]">
+            Watch how an AI agent thinks
           </h1>
-          <p className="hidden items-start gap-2 text-right font-mono text-[11px] leading-relaxed text-[#636a76] md:flex">
-            <span aria-hidden className="mt-[5px] h-1 w-1 shrink-0 bg-accent" />
-            No model — every run is a hand-written script you can scrub.
+          <p className="hidden font-mono text-[11px] tracking-[0.14em] text-[#636a76] uppercase md:block">
+            hand-scripted · no live model
           </p>
         </div>
 
@@ -509,9 +518,9 @@ export function Player() {
                 line wraps differently each beat */}
             <p
               className="min-h-[2.6em] max-w-xl text-[17px] leading-snug tracking-tight text-header-text md:min-h-[1.3em] md:text-[24px]"
-              style={narration.at > 0 ? enterStyle(ms, narration.at) : undefined}
+              style={shownNarration.at > 0 ? enterStyle(ms, shownNarration.at) : undefined}
             >
-              {narration.text}
+              {shownNarration.text}
             </p>
           </div>
         </div>

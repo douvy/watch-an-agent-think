@@ -26,16 +26,16 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://watch-an-agent-think.vercel.app"),
-  title: "Watch an AI Agent Think",
+  title: "Watch How an AI Agent Thinks",
   description,
   openGraph: {
-    title: "Watch an AI Agent Think",
+    title: "Watch How an AI Agent Thinks",
     description,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Watch an AI Agent Think",
+    title: "Watch How an AI Agent Thinks",
     description,
   },
 };

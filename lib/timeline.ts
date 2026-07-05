@@ -4,7 +4,10 @@
 
 export const CONTEXT_BUDGET = 8000;
 
-export type TimelineEvent = { at: number; tokensAfter: number } & (
+// `narration` is the storyteller line for the hero marquee — hand-written
+// per beat, in the mascot's first-person voice. Events without one fall
+// back to a generic line per event type.
+export type TimelineEvent = { at: number; tokensAfter: number; narration?: string } & (
   | { type: "plan"; planId: string; steps: string[] }
   | { type: "step_active"; planId: string; step: number }
   | { type: "step_done"; planId: string; step: number }
