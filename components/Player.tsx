@@ -169,9 +169,17 @@ const gentle = createSpring(presets.gentle);
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
+// prefers-reduced-motion collapses every spring to an instant cut — same
+// states, no easing. Read once at load; `ms > since` (not >=) keeps the
+// first server-rendered frame identical, so hydration never mismatches.
+const reducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /** 0 → 1 settle progress since a timestamp; 1 when settled or never fired. */
 function settle(ms: number, since: number | undefined, spring = snappy): number {
   if (since === undefined) return 1;
+  if (reducedMotion) return ms > since ? 1 : 0;
   const age = (ms - since) / 1000;
   if (age <= 0) return 0;
   return 1 - spring.at(age); // may overshoot past 1 — that's the point
@@ -473,7 +481,14 @@ function Scrubber({
   return (
     <div
       ref={ref}
-      className="group relative h-8 flex-1 cursor-pointer touch-none select-none"
+      role="slider"
+      tabIndex={0}
+      aria-label="timeline"
+      aria-valuemin={0}
+      aria-valuemax={Math.round(duration / 1000)}
+      aria-valuenow={Math.round(ms / 1000)}
+      aria-valuetext={`${(ms / 1000).toFixed(1)} of ${Math.round(duration / 1000)} seconds`}
+      className="group relative h-8 flex-1 cursor-pointer touch-none select-none max-md:h-11"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
         onScrub(toMs(e.clientX));
@@ -609,11 +624,7 @@ export function Player() {
     (choiceId: string, option: string) => {
       const isGate = !(choiceId in choices);
       if (!isGate && choices[choiceId] === option) return;
-      if (
-        !isGate &&
-        !playing &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ) {
+      if (!isGate && !playing && !reducedMotion) {
         setRewrite({ prevBlocks: state.blocks, prevTokens: state.tokens });
         setRewriteT(0);
       }
@@ -754,6 +765,8 @@ export function Player() {
   // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // never eat browser shortcuts — cmd+← is back, not scrub
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === " ") {
         e.preventDefault();
         setRewrite(null);
