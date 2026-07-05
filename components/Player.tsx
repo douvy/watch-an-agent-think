@@ -393,12 +393,15 @@ function StreamBlock({
     );
   }
 
+  // The verdict — unboxed on purpose: a mint bar and the final spoken
+  // line, echoing the thought blocks' anatomy so it can't be mistaken
+  // for the raised buttons that follow it at the end frame.
   return (
     <div
       style={enterStyle(ms, block.at)}
-      className="rounded-sm border border-accent/30 bg-surface px-3 py-2.5"
+      className="border-l-2 border-accent py-0.5 pl-3"
     >
-      <div className="label mb-1">done</div>
+      <div className="label mb-1 text-accent">done</div>
       <div className="font-serif text-[17px] text-header-text italic">
         {block.verdict}
       </div>
@@ -1087,11 +1090,15 @@ export function Player() {
                   when a run finishes, point at the next story. Pure f(ms):
                   scrub back before done and it unrenders. Once the trilogy
                   is complete the nudge retires — the finale takes its slot. */}
+              {/* clickable end-cards get the raised secondary-button look —
+                  lighter bg + the machined top glint — while the done
+                  verdict above them is an unboxed statement: boxes that
+                  lift are pressable, bars are the agent speaking */}
               {state.done && !trilogy && idx < scenarios.length - 1 && (
                 <button
                   onClick={() => select(idx + 1)}
                   style={enterStyle(ms, state.lastEventAt + 600)}
-                  className="flex w-full items-center justify-between rounded-sm border border-border bg-surface px-3 py-2.5 text-left hover:border-accent/50"
+                  className="flex w-full items-center justify-between rounded-sm border border-[#565b66] bg-hover-bg px-3 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:border-accent/60 hover:bg-[#3e434e]"
                 >
                   <span>
                     <span className="label block">next run</span>
@@ -1142,7 +1149,7 @@ export function Player() {
                     <button
                       onClick={() => pick(gate.choiceId, other.id)}
                       style={enterStyle(ms, state.lastEventAt + 700)}
-                      className="flex w-full items-center justify-between rounded-sm border border-border bg-surface px-3 py-2.5 text-left hover:border-accent/50"
+                      className="flex w-full items-center justify-between rounded-sm border border-[#565b66] bg-hover-bg px-3 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:border-accent/60 hover:bg-[#3e434e]"
                     >
                       <span>
                         <span className="label block">what if</span>
