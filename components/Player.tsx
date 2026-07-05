@@ -459,7 +459,7 @@ export function Player() {
     <>
       {/* Hero — live. The mascot and the narration line run off the same
           (scenario, ms) as the window below; the display type stays still. */}
-      <header className="relative border-b border-[#1a1a1a] px-5 py-4 md:px-10 md:py-8">
+      <header className="relative border-b border-[#1a1a1a] px-5 py-4 md:px-10 md:py-6">
         {/* registration marks on the bottom rule — drafting-table signature */}
         <span
           aria-hidden
@@ -491,7 +491,7 @@ export function Player() {
         {/* Live marquee — mascot + narration, driven by the same
             (scenario, ms) as the window below. This is what moves; it gets
             the display size. */}
-        <div className="mt-4 flex items-center gap-4 md:mt-7 md:gap-5">
+        <div className="mt-4 flex items-center gap-4 md:mt-5 md:gap-5">
           <Creature state={state} ms={ms} size={56} />
           <div className="min-w-0">
             <div className="label mb-1.5 flex items-center gap-1.5">
@@ -513,7 +513,7 @@ export function Player() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 pt-3 pb-6 md:px-10 md:py-10">
+      <div className="flex-1 px-4 pt-3 pb-6 md:px-10 md:py-6">
       {/* Player shell — window anatomy: title bar, tabs, task, panels, status.
           Chrome on surface, content wells on well: the window reads as a
           warm tonal object on the black page, Zed-style. */}
@@ -587,7 +587,7 @@ export function Player() {
                   : `${state.plans.length} plan${state.plans.length > 1 ? "s" : ""}`}
               </span>
             </div>
-            <div className="min-h-[140px] flex-1 space-y-5 p-4 md:min-h-[400px]">
+            <div className="min-h-[120px] flex-1 space-y-5 p-4 md:min-h-[320px]">
               {state.plans.map((plan, i) => (
                 <Plan
                   key={plan.planId}
@@ -612,7 +612,7 @@ export function Player() {
             </div>
             <div
               ref={streamRef}
-              className="max-h-[300px] min-h-[180px] space-y-3 overflow-y-auto p-4 md:max-h-[400px] md:min-h-[400px]"
+              className="max-h-[240px] min-h-[160px] space-y-3 overflow-y-auto p-4 md:max-h-[320px] md:min-h-[320px]"
             >
               {state.blocks.map((b, i) => (
                 <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} />
