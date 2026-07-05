@@ -75,9 +75,9 @@ export const recovery: Scenario = {
       branch: { choice: "recovery-pivot", option: "reproduce" },
       narration: "I stop patching the theory and drop it.",
       text: "The pool-size theory dies here. The plan built on it dies with it." },
-    { at: 27500, tokensAfter: 2650, type: "thought",
+    { at: 27000, tokensAfter: 2650, type: "thought",
       branch: { choice: "recovery-pivot", option: "logs" },
-      narration: "The logs are a mirror, not a window. I reproduce it.",
+      narration: "The logs are a mirror. I reproduce it.",
       text: "More lines describe the same symptom. Logs won't surface the cause — reproducing it will." },
     // -- spine rejoins: both paths killed the plan ----------------------------
     { at: 29000, tokensAfter: 2700, type: "plan_dead", planId: "p1",

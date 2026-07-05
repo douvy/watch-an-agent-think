@@ -81,75 +81,21 @@ function chaptersOf(
 }
 
 // Narration — the storyteller track, in the mascot's first-person voice.
-// Its face already mirrors the run, so the line is the agent talking to you,
-// not a caption about it. Each scenario hand-writes its own lines
-// (event.narration); these generics are only the fallback. Derived from the
-// last narratable event, so scrubbing rewrites it like captions.
+// Only hand-written lines speak: a line persists until the author replaces
+// it, so quiet beats stay quiet and the marquee keeps a reading rhythm
+// (enforced by the legibility test in lib/timeline.test.ts). Derived from
+// the last narrated event, so scrubbing rewrites it like captions.
 const INTRO_NARRATION = "I'm an agent. Press play and watch me work.";
-
-const TOOL_NARRATION: Record<string, string> = {
-  bash: "I run a command and wait on the machine.",
-  read: "I open a file to see what's actually there.",
-  edit: "I change the code.",
-  grep: "I search the codebase for clues.",
-};
 
 function narrationOf(
   scenario: Scenario,
   lastEventIndex: number,
   resolved: Choices,
 ): { at: number; text: string } {
-  let plans = 0;
   let out = { at: 0, text: INTRO_NARRATION };
   for (let i = 0; i <= lastEventIndex; i++) {
     const e = scenario.events[i];
-    if (!eventActive(e, resolved)) continue;
-    if (e.type === "plan") plans++;
-    if (e.narration) {
-      out = { at: e.at, text: e.narration };
-      continue;
-    }
-    switch (e.type) {
-      case "plan":
-        out = {
-          at: e.at,
-          text:
-            plans === 1
-              ? "First, I write myself a plan."
-              : "I write a new plan — a different approach this time.",
-        };
-        break;
-      case "thought":
-        out = { at: e.at, text: "I reason out loud before I act." };
-        break;
-      case "tool_call":
-        out = { at: e.at, text: TOOL_NARRATION[e.tool] ?? "I reach for a tool." };
-        break;
-      case "tool_result":
-        out = {
-          at: e.at,
-          text: e.ok
-            ? "The result comes back clean. I keep moving."
-            : "That didn't work. Watch my face.",
-        };
-        break;
-      case "plan_dead":
-        out = { at: e.at, text: "My plan was built on a bad guess — I'm dropping it." };
-        break;
-      case "compact":
-        out = {
-          at: e.at,
-          text: "My memory is nearly full, so I compress what I know.",
-        };
-        break;
-      case "choice":
-        // the question itself is the storyteller line while it's live
-        out = { at: e.at, text: e.prompt };
-        break;
-      case "done":
-        out = { at: e.at, text: "Done. Scrub back to see how I got here." };
-        break;
-    }
+    if (e.narration && eventActive(e, resolved)) out = { at: e.at, text: e.narration };
   }
   return out;
 }

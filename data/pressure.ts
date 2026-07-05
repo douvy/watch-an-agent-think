@@ -46,7 +46,7 @@ export const pressure: Scenario = {
     { at: 19500, tokensAfter: 3750, type: "thought",
       narration: "Eleven left. Watch my memory gauge climb.",
       text: "Eleven files to go. Same pattern every time." },
-    { at: 21000, tokensAfter: 3800, type: "tool_call", id: "t5", tool: "edit",
+    { at: 21500, tokensAfter: 3800, type: "tool_call", id: "t5", tool: "edit",
       narration: "I batch the similar files to move faster.",
       input: "auth.ts, cart.ts, nav.tsx, search.ts, feed.tsx — 17 call sites" },
     { at: 24500, tokensAfter: 6400, type: "tool_result", callId: "t5", ok: true, output: "renamed (8/14)",
@@ -79,11 +79,17 @@ export const pressure: Scenario = {
       text: "What's finished can live as one line each. What's left is six file names." },
     { at: 32800, tokensAfter: 7950, type: "thought",
       branch: { choice: "pressure-memory", option: "keep" },
-      narration: "Now I compress because I must. That's what refusing to forget costs.",
       text: "I hit the ceiling mid-edit and the work was lost. Compacting isn't optional — it's how I keep going." },
-    // -- spine rejoins: both paths compact, still at 8/14 -----------------------
+    // -- spine rejoins: both paths compact, still at 8/14. Same beat, same
+    //    summary — only the storyteller line differs, so the compact is
+    //    branch-tagged in a pair like the tool results above.
     { at: 34000, tokensAfter: 1900, type: "compact",
+      branch: { choice: "pressure-memory", option: "compress" },
       narration: "So I compress — keep the summary, drop the rest.",
+      summary: "8/14 files renamed — call-site detail summarized. Remaining: billing.ts, admin.ts, jobs/sync.ts, cli.ts, tests ×2" },
+    { at: 34000, tokensAfter: 1900, type: "compact",
+      branch: { choice: "pressure-memory", option: "keep" },
+      narration: "Forced to compress — that's what refusing to forget costs.",
       summary: "8/14 files renamed — call-site detail summarized. Remaining: billing.ts, admin.ts, jobs/sync.ts, cli.ts, tests ×2" },
     { at: 36500, tokensAfter: 1950, type: "thought",
       narration: "I work from my own notes now. That's the trade.",

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { stateAt } from "./timeline.ts";
+import { stateAt, eventActive, resolveChoices } from "./timeline.ts";
 import { loop } from "../data/loop.ts";
 import { recovery } from "../data/recovery.ts";
 import { pressure } from "../data/pressure.ts";
@@ -153,6 +153,35 @@ test("event timestamps are monotonic and within duration", () => {
       assert.ok(e.at >= prev, `${sc.id}: ${e.at} after ${prev}`);
       assert.ok(e.at <= sc.durationMs);
       prev = e.at;
+    }
+  }
+});
+
+// The pacing contract: a storyteller line must live long enough to read
+// (~250wpm) before the next line replaces it. "Feels too fast" becomes a
+// named beat, not a vibe — and every future scenario inherits the meter.
+// Choice beats park the clock, so their lines get the reader's own patience.
+test("every narration line lives long enough to read", () => {
+  const MS_PER_WORD = 240;
+  const words = (s: string) => s.split(/\s+/).filter((w) => /\w/.test(w)).length;
+  for (const sc of [loop, recovery, pressure]) {
+    const gates = sc.events.filter((e) => e.type === "choice");
+    // one path per option — each covers the full spine plus one branch
+    const paths = gates.flatMap((g) =>
+      g.type === "choice" ? g.options.map((o) => ({ [g.choiceId]: o.id })) : [],
+    );
+    for (const picks of paths) {
+      const resolved = resolveChoices(sc, picks);
+      const lines = sc.events.filter((e) => e.narration && eventActive(e, resolved));
+      lines.forEach((e, i) => {
+        if (e.type === "choice") return; // the clock parks here
+        const lives = (lines[i + 1]?.at ?? sc.durationMs) - e.at;
+        const needs = words(e.narration!) * MS_PER_WORD;
+        assert.ok(
+          lives >= needs,
+          `${sc.id}(${Object.values(picks)}) @${e.at} "${e.narration}" lives ${lives}ms, needs ${needs}ms`,
+        );
+      });
     }
   }
 });

@@ -1,7 +1,7 @@
 import type { Scenario } from "@/lib/timeline";
 
 // Scenario 1 — The Loop. Teaches think → act → observe → repeat.
-// The reader plants the bug: a `choice` at 1.5s parks the clock and asks
+// The reader plants the bug: a `choice` at 2s parks the clock and asks
 // which failure is hiding in lib/utils.ts. Both branches are hand-written
 // into the same time window (branch-tagged pairs share timestamps and
 // callIds), so the run's rhythm never depends on the pick — only the
@@ -25,7 +25,7 @@ export const loop: Scenario = {
       "Fix it",
       "Verify green",
     ]},
-    { at: 1500, tokensAfter: 620, type: "choice", choiceId: "loop-bug",
+    { at: 2000, tokensAfter: 620, type: "choice", choiceId: "loop-bug",
       narration: "Before I hunt — you choose what's broken.",
       prompt: "Pick the bug hiding in lib/utils.ts:",
       options: [
@@ -48,7 +48,7 @@ export const loop: Scenario = {
     { at: 9000, tokensAfter: 1330, type: "thought",
       narration: "I read the test before I guess.",
       text: "One failure. What does the test actually expect?" },
-    { at: 10500, tokensAfter: 1370, type: "tool_call", id: "t2", tool: "read", input: "utils.test.ts",
+    { at: 11000, tokensAfter: 1370, type: "tool_call", id: "t2", tool: "read", input: "utils.test.ts",
       narration: "The test defines what 'correct' means." },
     { at: 13000, tokensAfter: 2020, type: "tool_result", callId: "t2", ok: true,
       branch: { choice: "loop-bug", option: "date" },
@@ -63,7 +63,7 @@ export const loop: Scenario = {
     { at: 16000, tokensAfter: 2080, type: "thought",
       narration: "Now the other half — what the code actually does.",
       text: "That's the contract. Now read the implementation." },
-    { at: 17500, tokensAfter: 2120, type: "tool_call", id: "t3", tool: "read", input: "lib/utils.ts",
+    { at: 18500, tokensAfter: 2120, type: "tool_call", id: "t3", tool: "read", input: "lib/utils.ts",
       narration: "I open the implementation." },
     { at: 20000, tokensAfter: 2670, type: "tool_result", callId: "t3", ok: true,
       branch: { choice: "loop-bug", option: "date" },
