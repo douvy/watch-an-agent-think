@@ -489,6 +489,10 @@ export function Player() {
   // the first click, so the browser's gesture rule is satisfied by
   // pressing play). Toggle lives in the status bar.
   const [sound, setSound] = useState(true);
+  // Which runs this reader has seen through to done — session memory for
+  // the tab ticks, so the trilogy reads as collectible. Meta-state like the
+  // sound toggle, deliberately outside the pure (ms, choices) world.
+  const [watched, setWatched] = useState<number[]>([]);
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -615,6 +619,11 @@ export function Player() {
       setMs(Math.min(t * 1000, scenarios[si].durationMs, cap));
     }
   }, []);
+
+  // A run counts as watched once its verdict is on screen.
+  useEffect(() => {
+    if (state.done) setWatched((w) => (w.includes(idx) ? w : [...w, idx]));
+  }, [state.done, idx]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Deep link out: while paused, the URL captures the frame you're looking at.
@@ -941,6 +950,10 @@ export function Player() {
                 run {String(i + 1).padStart(2, "0")}
               </span>
               <span className="max-sm:hidden">{sc.title}</span>
+              {/* watched tick — the trilogy is collectible */}
+              {watched.includes(i) && (
+                <Check size={10} className="text-accent" strokeWidth={3} />
+              )}
             </button>
           ))}
           <div aria-hidden className="flex-1 border-b border-border" />
@@ -1053,6 +1066,35 @@ export function Player() {
                   </span>
                 </button>
               )}
+              {/* What-if — hands the reader the branch flip they'd otherwise
+                  never find: from the end frame, one click rewrites the whole
+                  visible story (pick() runs the unravel/cascade in place).
+                  Flips back and forth forever. */}
+              {state.done &&
+                (() => {
+                  const gate = state.blocks.find((b) => b.kind === "choice");
+                  const other =
+                    gate?.kind === "choice"
+                      ? gate.options.find((o) => o.id !== choices[gate.choiceId])
+                      : undefined;
+                  return gate?.kind === "choice" && other ? (
+                    <button
+                      onClick={() => pick(gate.choiceId, other.id)}
+                      style={enterStyle(ms, state.lastEventAt + 700)}
+                      className="flex w-full items-center justify-between rounded-sm border border-border bg-surface px-3 py-2.5 text-left hover:border-accent/50"
+                    >
+                      <span>
+                        <span className="label block">what if</span>
+                        <span className="font-serif text-[15px] text-accent-light">
+                          {other.label} — watch the story rewrite
+                        </span>
+                      </span>
+                      <span aria-hidden className="font-mono text-accent">
+                        ↺
+                      </span>
+                    </button>
+                  ) : null;
+                })()}
             </div>
           </section>
 
