@@ -41,7 +41,7 @@ function chaptersOf(scenario: Scenario): { at: number; label: string }[] {
 // not a caption about it. Each scenario hand-writes its own lines
 // (event.narration); these generics are only the fallback. Derived from the
 // last narratable event, so scrubbing rewrites it like captions.
-const INTRO_NARRATION = "Hi — I'm an agent. Press play and watch me work.";
+const INTRO_NARRATION = "I'm an agent. Press play and watch me work.";
 
 const TOOL_NARRATION: Record<string, string> = {
   bash: "I run a command and wait on the machine.",
@@ -489,40 +489,27 @@ export function Player() {
         >
           +
         </span>
-        {/* Masthead — one mono spec-sheet line, same voice as the machine's
-            labels. The storyteller marquee below is the biggest type on the
-            page; the brand stays quiet. */}
-        <div className="flex items-baseline justify-between gap-4">
-          <h1 className="shrink-0 font-mono text-[11px] font-medium tracking-[0.14em] text-header-text uppercase md:text-[12px]">
-            Watch how an AI agent thinks
-          </h1>
-          <p className="hidden font-mono text-[11px] tracking-[0.14em] text-[#636a76] uppercase md:block">
-            hand-scripted · no live model
-          </p>
-        </div>
+        {/* Masthead — one centered mono spec-sheet line, same voice as the
+            machine's labels. The storyteller marquee below is the biggest
+            type on the page; the brand stays quiet. */}
+        <h1 className="text-center font-mono text-[11px] font-medium tracking-[0.14em] text-[#a9adb6] uppercase md:text-[12px]">
+          Watch how an AI agent thinks
+        </h1>
 
-        {/* Live marquee — mascot + narration, driven by the same
-            (scenario, ms) as the window below. This is what moves; it gets
-            the display size. */}
-        <div className="mt-4 flex items-center gap-4 md:mt-5 md:gap-5">
+        {/* Live marquee — centered as a unit. Mobile stacks (mascot, chip,
+            line); desktop puts the mascot inline with the text. The text
+            column is fixed-width on desktop so the centered group never
+            changes width — no sliding as the line length changes. */}
+        <div className="mt-4 flex flex-col items-center gap-2.5 md:mt-5 md:flex-row md:justify-center md:gap-6">
           <Creature state={state} ms={ms} size={56} />
-          <div className="min-w-0">
-            <div className="label mb-1.5 flex items-center gap-1.5">
-              <span aria-hidden className="h-1 w-1 bg-accent" />
-              live
-              <span className="ml-1 font-mono text-[10px] text-[#4d525e] normal-case">
-                fig. {String(idx + 1).padStart(2, "0")}
-              </span>
-            </div>
-            {/* min-h reserves two lines so the mascot doesn't bounce as the
-                line wraps differently each beat */}
-            <p
-              className="min-h-[2.6em] max-w-xl text-[17px] leading-snug tracking-tight text-header-text md:min-h-[1.3em] md:text-[24px]"
-              style={shownNarration.at > 0 ? enterStyle(ms, shownNarration.at) : undefined}
-            >
-              {shownNarration.text}
-            </p>
-          </div>
+          {/* min-h reserves two lines so the layout doesn't bounce as the
+              line wraps differently each beat */}
+          <p
+            className="min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug text-header-text md:min-h-[1.3em] md:w-[36rem] md:text-left md:text-[24px]"
+            style={shownNarration.at > 0 ? enterStyle(ms, shownNarration.at) : undefined}
+          >
+            {shownNarration.text}
+          </p>
         </div>
       </header>
 
@@ -533,52 +520,78 @@ export function Player() {
       <div className="overflow-hidden rounded-sm border border-border bg-well">
         {/* Title bar — chrome rows are surface, content wells stay black:
             the banding does the sectioning so text doesn't have to */}
-        <div className="relative flex items-center border-b border-border bg-surface px-3 py-2">
-          <div className="flex items-center gap-1.5" aria-hidden>
-            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
-            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
-            <span className="h-[7px] w-[7px] rounded-full border border-[#4d525e]" />
+        <div className="relative flex items-stretch border-b border-border bg-surface">
+          {/* left section is exactly the plan column's width, so the title
+              bar's dividers line up with the grid below — Zed's trick */}
+          <div className="flex items-stretch bg-well md:w-[260px] md:border-r md:border-border">
+            <div className="flex items-center gap-1.5 border-r border-border px-3 py-2" aria-hidden>
+              <span className="h-[8px] w-[8px] rounded-full bg-[#ff5f57]" />
+              <span className="h-[8px] w-[8px] rounded-full bg-[#febc2e]" />
+              <span className="h-[8px] w-[8px] rounded-full bg-[#28c840]" />
+            </div>
+            <div
+              aria-hidden
+              className="hidden flex-1 items-center gap-1.5 px-3 font-mono text-[10px] text-[#636a76] sm:flex"
+            >
+              <Search size={10} />
+              Search…
+            </div>
           </div>
-          <span className="absolute left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#636a76]">
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-[#dcdfe3]">
             data/{scenario.id}.ts
           </span>
-          <span className="ml-auto font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase">
+          <span className="ml-auto flex items-center px-3 font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase">
             read-only
           </span>
+          {/* the avatar is the agent itself — same face, same clock */}
+          <div className="flex items-center px-2.5 py-1.5">
+            <span
+              aria-hidden
+              className="flex h-5 w-5 items-center justify-center rounded-full border border-[#4d525e] bg-well"
+            >
+              <Creature state={state} ms={ms} size={13} />
+            </span>
+          </div>
         </div>
 
-        {/* Scenario tabs — active tab drops to the content black, like an
-            editor tab fused to its buffer */}
-        <div className="flex items-stretch border-b border-border bg-surface">
+        {/* Scenario tabs — the editor-tab illusion done properly: the active
+            tab has no bottom border, so its well bg pours straight into the
+            row below. Inactive tabs (and the empty rail after them) carry
+            the border line. Numbers are quiet keyboard hints, not chips. */}
+        <div className="flex items-stretch bg-surface">
           {scenarios.map((sc, i) => (
             <button
               key={sc.id}
               onClick={() => select(i)}
-              className={`relative flex items-center gap-2 border-r border-border px-4 py-2.5 font-mono text-[11px] tracking-wide uppercase transition-colors ${
+              className={`relative flex items-center gap-2 border-r border-b px-4 py-2 font-mono text-[12px] transition-colors ${
                 i === idx
-                  ? "bg-well text-header-text"
-                  : "text-[#636a76] hover:bg-hover-bg hover:text-muted"
+                  ? "border-r-border border-b-transparent bg-well text-header-text"
+                  : "border-r-border border-b-border text-[#a9adb6] hover:bg-hover-bg hover:text-header-text"
               }`}
             >
               {i === idx && (
                 <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-accent" />
               )}
-              <kbd
-                className={`inline-flex h-4 w-4 items-center justify-center border text-[9px] ${
-                  i === idx ? "border-accent/50 text-accent" : "border-border text-[#636a76]"
-                }`}
+              <span
+                aria-hidden
+                className={`text-[10px] ${i === idx ? "text-accent" : "text-[#636a76]"}`}
               >
                 {i + 1}
-              </kbd>
+              </span>
               {sc.title}
             </button>
           ))}
+          <div aria-hidden className="flex-1 border-b border-border" />
         </div>
 
-        {/* Task bar */}
-        <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
-          <span className="label">task</span>
-          <span className="min-w-0 truncate font-mono text-[13px] text-header-text">
+        {/* Task bar — the human's prompt, styled like one: shell arrow +
+            the brightest text in the chrome. The active tab pours into
+            this row, so the task reads as the buffer's first line. */}
+        <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
+          <span aria-hidden className="shrink-0 font-mono text-[13px] text-accent">
+            ❯
+          </span>
+          <span className="min-w-0 truncate font-mono text-[14px] text-[#f0f2f5]">
             {scenario.task}
           </span>
           <span className="ml-auto hidden shrink-0 font-mono text-[10px] text-[#636a76] md:block">
@@ -594,7 +607,7 @@ export function Player() {
           <section className="flex min-w-0 flex-col max-md:order-1">
             <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">plan</span>
-              <span className="font-mono text-[10px] text-[#636a76]">
+              <span className="font-mono text-[10px] text-[#a9adb6]">
                 {state.plans.length === 0
                   ? "—"
                   : `${state.plans.length} plan${state.plans.length > 1 ? "s" : ""}`}
@@ -619,7 +632,7 @@ export function Player() {
           <section className="flex min-w-0 flex-col max-md:order-3">
             <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">actions</span>
-              <span className="font-mono text-[10px] text-[#636a76]">
+              <span className="font-mono text-[10px] text-[#a9adb6]">
                 {state.lastEventIndex + 1}/{scenario.events.length} events
               </span>
             </div>
@@ -640,7 +653,7 @@ export function Player() {
           <section className="flex min-w-0 flex-col max-md:order-2">
             <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-1.5">
               <span className="label">memory</span>
-              <span className="font-mono text-[10px] text-[#636a76]">
+              <span className="font-mono text-[10px] text-[#a9adb6]">
                 {Math.round(pct * 100)}%
               </span>
             </div>
@@ -726,7 +739,7 @@ export function Player() {
         {/* Status bar */}
         <div className="flex items-center justify-between border-t border-border bg-surface px-3 py-1.5 font-mono text-[10px]">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-muted">
+            <span className="flex items-center gap-1.5 text-[#dcdfe3]">
               <span
                 aria-hidden
                 className={`h-1.5 w-1.5 rounded-full ${
@@ -742,12 +755,12 @@ export function Player() {
             <span aria-hidden className="text-[#4d525e]">
               ·
             </span>
-            <span className="text-[#636a76]">
+            <span className="text-[#a9adb6]">
               run {String(idx + 1).padStart(2, "0")} /{" "}
               {String(scenarios.length).padStart(2, "0")}
             </span>
           </div>
-          <span className="hidden text-[#636a76] md:block">
+          <span className="hidden text-[#a9adb6] md:block">
             space play · ← → scrub · 1–3 runs
           </span>
         </div>

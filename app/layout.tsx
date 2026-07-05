@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
+import { Inter, JetBrains_Mono, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,11 +12,11 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-// Display voice — serif italic for headlines and verdicts, the human
-// register against the machine mono. The Zed move.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
+// The agent's voice — narration in the hero, thoughts and verdicts in the
+// terminal (italic). One speaker, one serif, against the machine mono.
+const plexSerif = IBM_Plex_Serif({
+  variable: "--font-plex-serif",
+  weight: ["400", "500"],
   style: ["normal", "italic"],
   subsets: ["latin"],
 });
@@ -48,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} font-sans`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${plexSerif.variable} font-sans`}
       >
         <main className="min-h-screen">{children}</main>
       </body>

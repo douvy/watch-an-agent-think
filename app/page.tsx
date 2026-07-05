@@ -13,6 +13,9 @@ export default function Home() {
           <span className="font-mono text-[11px] text-[#636a76]">
             Design engineer. I make AI comprehensible.
           </span>
+          <span className="hidden font-mono text-[11px] tracking-[0.14em] text-[#636a76] uppercase md:block">
+            hand-scripted · no live model
+          </span>
           <a
             href="https://github.com/douvy/watch-an-agent-think"
             className="font-mono text-[11px] text-muted hover:text-header-text"
