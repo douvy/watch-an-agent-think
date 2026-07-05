@@ -185,14 +185,20 @@ export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): 
         }
         break;
       }
-      case "compact":
-        for (const b of blocks) {
-          if ((b.kind === "thought" || b.kind === "tool") && b.absorbedAt === undefined) {
-            b.absorbedAt = e.at;
-          }
-        }
+      case "compact": {
+        // Absorption folds top-down — oldest memory first — as a wave, not a
+        // blink. The stagger lives in timeline time, so it scrubs both
+        // directions for free and purity holds. Whole wave ≤ 600ms.
+        const live = blocks.filter(
+          (b) => (b.kind === "thought" || b.kind === "tool") && b.absorbedAt === undefined,
+        );
+        const stagger = live.length ? Math.min(60, 600 / live.length) : 0;
+        live.forEach((b, i) => {
+          if (b.kind === "thought" || b.kind === "tool") b.absorbedAt = e.at + i * stagger;
+        });
         blocks.push({ kind: "compact", at: e.at, summary: e.summary });
         break;
+      }
       case "choice":
         blocks.push({
           kind: "choice",

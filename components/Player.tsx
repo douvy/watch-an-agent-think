@@ -39,10 +39,24 @@ function runDot(scenario: Scenario): string {
 // Decision beats: the run plays continuously, but a `choice` event parks
 // the clock at its settle point (at + HOLD_MS) and waits on the reader.
 // Their pick flips branch-tagged beats on; everything downstream is a pure
-// function of (scenario, ms, choices), so re-picking later rewrites the
-// run instantly. An unanswered question is a hard wall — no input moves
-// time past it. Answered ones never wall again, so replays run free.
+// function of (scenario, ms, choices). An unanswered question is a hard
+// wall — no input moves time past it. Answered ones never wall again, so
+// replays run free.
 const HOLD_MS = 800;
+
+// Branch-rewrite choreography (wall-clock, one-shot): flipping an answered
+// choice while paused doesn't blink the new future in — the old one
+// unravels bottom-up back toward the choice, the new one cascades top-down,
+// and the memory gauge re-springs last. Any input cancels straight to the
+// pure state; playing or prefers-reduced-motion skips it entirely.
+const REWRITE = {
+  hold: 100, // chip flips, a beat of stillness
+  exitStagger: 40, // old future unravels bottom-up
+  enterAt: 300, // new future starts cascading top-down
+  enterStagger: 40,
+  gaugeAt: 550, // memory is the last thing the rewrite touches
+  total: 950,
+};
 
 // Chapters derive from the script — the beats worth jumping to. Only the
 // reader's current path counts; the other branch's beats don't exist here.
@@ -233,10 +247,13 @@ function StreamBlock({
   block,
   ms,
   onPick,
+  exitFactor,
 }: {
   block: Block;
   ms: number;
   onPick?: (choiceId: string, option: string) => void;
+  /** Branch-rewrite exit: 1 → 0 as the old future unravels. */
+  exitFactor?: number;
 }) {
   // Absorption (compaction): block squeezes to nothing as the spring settles.
   const absorbedAt =
@@ -244,17 +261,24 @@ function StreamBlock({
   // Measured while live so the squeeze starts from the block's real height —
   // a hard-coded cap would clip tall tool outputs the instant absorption
   // starts. Fallback only matters if you deep-link into the middle of a
-  // squeeze, where the block is already near-gone.
+  // squeeze, where the block is already near-gone. Exiting blocks render
+  // naturally until their stagger slot arrives (exitFactor stays 1), so the
+  // measurement lands before the collapse needs it.
   const measureRef = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState(120);
   useEffect(() => {
-    if (absorbedAt === undefined && measureRef.current) {
+    if (
+      absorbedAt === undefined &&
+      (exitFactor === undefined || exitFactor >= 1) &&
+      measureRef.current
+    ) {
       const h = measureRef.current.offsetHeight;
       if (h !== measured) setMeasured(h);
     }
-  }, [absorbedAt, measured, block]);
+  }, [absorbedAt, measured, block, exitFactor]);
   const squeeze = 1 - settle(ms, absorbedAt, gentle); // 1 → 0
   if (absorbedAt !== undefined && squeeze <= 0.001) return null;
+  if (exitFactor !== undefined && exitFactor <= 0.001) return null;
 
   // Teleprompter: a block recedes a few seconds after its moment passes so
   // the eye always knows where "now" is. Pure function of ms — scrub back
@@ -269,7 +293,13 @@ function StreamBlock({
   const dim = 1 - 0.5 * recede;
 
   const wrap: React.CSSProperties =
-    absorbedAt !== undefined
+    exitFactor !== undefined && exitFactor < 1
+      ? {
+          opacity: clamp01(exitFactor),
+          maxHeight: `${clamp01(exitFactor) * measured}px`,
+          overflow: "hidden",
+        }
+      : absorbedAt !== undefined
       ? {
           opacity: clamp01(squeeze),
           maxHeight: `${clamp01(squeeze) * measured}px`,
@@ -483,6 +513,14 @@ export function Player() {
   // The reader's picks. Everything on screen is stateAt(scenario, ms, choices)
   // — flipping a pick rewrites all downstream state instantly, for free.
   const [choices, setChoices] = useState<Choices>({});
+  // Branch-rewrite in flight: the outgoing future, captured at the flip so
+  // it can unravel while the new one cascades in. rewriteT is wall-clock ms
+  // since the flip. Null = pure state, no wrappers, no cost.
+  const [rewrite, setRewrite] = useState<{
+    prevBlocks: Block[];
+    prevTokens: number;
+  } | null>(null);
+  const [rewriteT, setRewriteT] = useState(0);
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -501,6 +539,51 @@ export function Player() {
     () => activeEvents.filter((e) => e.at <= ms).length,
     [activeEvents, ms],
   );
+  // The stream under rewrite: a union of the outgoing future (exit delays
+  // bottom-up — the timeline unravels back toward the choice) and the
+  // incoming one (enter delays top-down), interleaved by timestamp so each
+  // exit collapses exactly where its replacement grows. Choice cards are
+  // matched by id — the reader's marks never exit. Long-absorbed blocks are
+  // skipped: they render null and would only stretch the wave.
+  const streamItems = useMemo(() => {
+    const items: {
+      key: string;
+      block: Block;
+      exitDelay?: number;
+      enterDelay?: number;
+    }[] = state.blocks.map((b, i) => ({ key: `${b.kind}-${b.at}-${i}`, block: b }));
+    if (!rewrite) return items;
+    const sig = (b: Block) =>
+      b.kind === "choice" ? `choice:${b.choiceId}` : JSON.stringify(b);
+    const gone = (b: Block) =>
+      (b.kind === "thought" || b.kind === "tool") &&
+      b.absorbedAt !== undefined &&
+      ms - b.absorbedAt > 1000;
+    const newSigs = new Set(state.blocks.map(sig));
+    const oldSigs = new Set(rewrite.prevBlocks.map(sig));
+    const exiting = rewrite.prevBlocks.filter((b) => !newSigs.has(sig(b)) && !gone(b));
+    const entering = state.blocks.filter((b) => !oldSigs.has(sig(b)) && !gone(b));
+    exiting.forEach((b, i) => {
+      items.push({
+        key: `x-${b.kind}-${b.at}-${i}`,
+        block: b,
+        exitDelay: REWRITE.hold + (exiting.length - 1 - i) * REWRITE.exitStagger,
+      });
+    });
+    const enterDelays = new Map(
+      entering.map((b, i) => [b, REWRITE.enterAt + i * REWRITE.enterStagger] as const),
+    );
+    for (const it of items) {
+      const d = enterDelays.get(it.block);
+      if (d !== undefined) it.enterDelay = d;
+    }
+    items.sort(
+      (a, b) =>
+        a.block.at - b.block.at ||
+        (a.exitDelay !== undefined ? 0 : 1) - (b.exitDelay !== undefined ? 0 : 1),
+    );
+    return items;
+  }, [state.blocks, rewrite, ms]);
   const streamRef = useRef<HTMLDivElement>(null);
   const ended = ms >= scenario.durationMs;
   // A question is live and unanswered — it's the reader's turn. The chrome
@@ -514,15 +597,25 @@ export function Player() {
   const shownNarration = pristine ? { at: 0, text: INTRO_NARRATION } : narration;
 
   // Answering the live gate resumes the run — even if you scrubbed back a
-  // touch first. Flipping an already-answered question just rewrites
-  // history and stays put.
+  // touch first. Flipping an already-answered question rewrites history and
+  // stays put — staged by the REWRITE choreography when paused, instant
+  // while playing or under reduced motion.
   const pick = useCallback(
     (choiceId: string, option: string) => {
       const isGate = !(choiceId in choices);
+      if (!isGate && choices[choiceId] === option) return;
+      if (
+        !isGate &&
+        !playing &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        setRewrite({ prevBlocks: state.blocks, prevTokens: state.tokens });
+        setRewriteT(0);
+      }
       setChoices((c) => ({ ...c, [choiceId]: option }));
       if (!playing && isGate) setPlaying(true);
     },
-    [playing, choices],
+    [playing, choices, state.blocks, state.tokens],
   );
 
   // The earliest unanswered decision is a hard wall on the timeline: no
@@ -609,11 +702,32 @@ export function Player() {
     return () => cancelAnimationFrame(raf);
   }, [playing, scenario, choices]);
 
+  // Rewrite clock — a short wall-clock rAF that drives the unravel/cascade,
+  // then hands back to the pure state and unmounts itself.
+  useEffect(() => {
+    if (!rewrite) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = now - start;
+      if (t >= REWRITE.total) {
+        setRewrite(null);
+        setRewriteT(0);
+        return;
+      }
+      setRewriteT(t);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [rewrite]);
+
   // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === " ") {
         e.preventDefault();
+        setRewrite(null);
         if (ms >= scenario.durationMs) {
           setMs(0);
           setPlaying(true);
@@ -622,15 +736,18 @@ export function Player() {
         }
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
+        setRewrite(null);
         setPlaying(false);
         setMs(Math.min(ms + 2000, maxMs));
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
+        setRewrite(null);
         setPlaying(false);
         setMs(Math.max(0, ms - 2000));
       } else {
         const n = Number(e.key);
         if (n >= 1 && n <= scenarios.length) {
+          setRewrite(null);
           setIdx(n - 1);
           setMs(0);
           setChoices({});
@@ -642,24 +759,45 @@ export function Player() {
     return () => window.removeEventListener("keydown", onKey);
   }, [ms, playing, blocked, maxMs, scenario.durationMs]);
 
-  // Keep the stream pinned to the latest block during playback.
+  // Chat-style follow: the stream tracks the newest block while the reader
+  // sits pinned near the bottom — playing, scrubbing, or mid-rewrite alike —
+  // and lets go the moment they scroll up to read.
+  const pinnedRef = useRef(true);
   useEffect(() => {
-    if (playing && streamRef.current) {
-      streamRef.current.scrollTop = streamRef.current.scrollHeight;
-    }
-  }, [playing, state.lastEventIndex]);
+    const el = streamRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  // No dep array on purpose: any frame can change the stream's height
+  // (playback, scrubbing, rewrite collapse), and following costs one
+  // property set when nothing moved.
+  useEffect(() => {
+    const el = streamRef.current;
+    if (el && pinnedRef.current) el.scrollTop = el.scrollHeight;
+  });
 
   // Gauge: spring from tokensPrev toward tokens since the last event.
+  // During a rewrite it holds the old reading, then re-springs to the new
+  // one last — memory is the final thing the rewrite touches.
   const gaugeProgress = clamp01(settle(ms, state.lastEventAt, gentle));
-  const displayTokens = Math.round(
-    state.tokensPrev + (state.tokens - state.tokensPrev) * gaugeProgress,
-  );
+  const displayTokens = rewrite
+    ? Math.round(
+        rewrite.prevTokens +
+          (state.tokens - rewrite.prevTokens) *
+            clamp01(settle(rewriteT, REWRITE.gaugeAt)),
+      )
+    : Math.round(state.tokensPrev + (state.tokens - state.tokensPrev) * gaugeProgress);
   const pct = clamp01(displayTokens / CONTEXT_BUDGET);
   const gaugeColor =
     pct > 0.9 ? "bg-accent-negative" : pct > 0.75 ? "bg-warning" : "bg-accent";
 
   // Picking a run starts it — it plays to its first decision and waits.
   const select = (i: number) => {
+    setRewrite(null);
     setIdx(i);
     setMs(0);
     setChoices({});
@@ -711,7 +849,13 @@ export function Player() {
             className={`min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:w-[36rem] md:text-left md:text-[24px] ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
-            style={shownNarration.at > 0 ? enterStyle(ms, shownNarration.at) : undefined}
+            style={
+              rewrite
+                ? enterStyle(rewriteT, REWRITE.enterAt)
+                : shownNarration.at > 0
+                  ? enterStyle(ms, shownNarration.at)
+                  : undefined
+            }
           >
             {shownNarration.text}
           </p>
@@ -871,9 +1015,22 @@ export function Player() {
               ref={streamRef}
               className="max-h-[240px] min-h-[160px] space-y-3 overflow-y-auto p-4 md:max-h-[320px] md:min-h-[320px]"
             >
-              {state.blocks.map((b, i) => (
-                <StreamBlock key={`${b.kind}-${b.at}-${i}`} block={b} ms={ms} onPick={pick} />
-              ))}
+              {streamItems.map((it) =>
+                it.exitDelay !== undefined ? (
+                  <StreamBlock
+                    key={it.key}
+                    block={it.block}
+                    ms={ms}
+                    exitFactor={1 - clamp01(settle(rewriteT, it.exitDelay))}
+                  />
+                ) : it.enterDelay !== undefined ? (
+                  <div key={it.key} style={enterStyle(rewriteT, it.enterDelay)}>
+                    <StreamBlock block={it.block} ms={ms} onPick={pick} />
+                  </div>
+                ) : (
+                  <StreamBlock key={it.key} block={it.block} ms={ms} onPick={pick} />
+                ),
+              )}
               {state.blocks.length === 0 && (
                 <div className="font-mono text-[12px] text-[#636a76]">waiting…</div>
               )}
@@ -911,6 +1068,7 @@ export function Player() {
         <div className="flex items-center gap-2 border-t border-border px-4 py-2">
           <button
             onClick={() => {
+              setRewrite(null);
               if (ended) {
                 setMs(0);
                 setPlaying(true);
@@ -935,6 +1093,7 @@ export function Player() {
             duration={scenario.durationMs}
             ticks={activeEvents.map((e) => e.at)}
             onScrub={(m) => {
+              setRewrite(null);
               setPlaying(false);
               setMs(Math.min(m, maxMs));
             }}
@@ -960,6 +1119,7 @@ export function Player() {
                 onClick={() => {
                   // land held just past the beat so its entrance has settled;
                   // never past the wall — the decision must be answered here
+                  setRewrite(null);
                   setPlaying(false);
                   setMs(Math.min(ch.at + HOLD_MS, scenario.durationMs, maxMs));
                 }}
