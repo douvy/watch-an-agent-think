@@ -585,7 +585,10 @@ export function Player() {
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
-      const dt = now - last;
+      // rAF hands us the frame's vsync timestamp, which can precede the
+      // performance.now() captured when scheduling — an unguarded negative
+      // first dt would drive ms below zero (NaN pixel frames in the mascot).
+      const dt = Math.max(0, now - last);
       last = now;
       setMs((m) => {
         const next = m + dt;
