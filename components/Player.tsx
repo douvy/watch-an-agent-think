@@ -1037,9 +1037,11 @@ export function Player() {
             reads as one column on a phone. Same (state, ms) as everything. */}
         <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 md:hidden">
           <Creature state={state} ms={ms} size={32} />
-          {/* min-h reserves two lines so the strip doesn't bounce as lines wrap */}
+          {/* min-h reserves two lines so the strip doesn't bounce as lines
+              wrap; flex items-center keeps one-liners vertically centered
+              inside that reserved box */}
           <p
-            className={`min-h-[2.5em] flex-1 font-serif text-[14px] leading-tight ${
+            className={`flex min-h-[2.5em] flex-1 items-center font-serif text-[14px] leading-tight ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
             style={
