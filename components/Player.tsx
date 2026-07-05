@@ -749,16 +749,21 @@ export function Player() {
     if (!sound || !playing || state.lastEventIndex <= prev) return;
     const e = scenario.events[state.lastEventIndex];
     if (!e) return;
+    // step_active/step_done are bookkeeping — silent, or every beat
+    // would double-chirp and the voice turns into a metronome
+    if (e.type === "step_active" || e.type === "step_done") return;
     chirp(
       (e.type === "tool_result" && !e.ok) || e.type === "plan_dead"
         ? "fail"
-        : e.type === "choice"
-          ? "ask"
-          : e.type === "compact"
-            ? "compact"
-            : e.type === "done"
-              ? "done"
-              : "move",
+        : e.type === "tool_result"
+          ? "ok"
+          : e.type === "choice"
+            ? "ask"
+            : e.type === "compact"
+              ? "compact"
+              : e.type === "done"
+                ? "done"
+                : "move",
     );
   }, [state.lastEventIndex, sound, playing, scenario]);
 
