@@ -107,7 +107,7 @@ const CHAPTER_TONES: Record<string, string> = {
 // Fact 0, in the mascot's voice. "Press play" is the whole CTA — the h1
 // already promises the watching, so the tail would only echo it.
 const INTRO_NARRATION =
-  "I'm an AI agent — a language model in a loop with tools. Press play.";
+  "I'm an AI agent — an AI in a loop with tools. Press play.";
 
 function narrationOf(
   scenario: Scenario,
@@ -745,8 +745,11 @@ export function Player() {
               Search…
             </div>
           </div>
+          {/* the code track keeps the filename fiction; everyday viewers
+              get the plain run name — a .ts path is the one piece of coder
+              set-dressing they'd otherwise meet */}
           <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-[#dcdfe3]">
-            data/{scenario.id}.ts
+            {mode === "code" ? `data/${scenario.id}.ts` : scenario.id}
           </span>
           <div className="ml-auto flex items-center justify-end">
             {/* the avatar is the agent itself — same face, same clock */}

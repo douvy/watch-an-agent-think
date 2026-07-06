@@ -29,7 +29,7 @@ export const pressure: Scenario = {
     { at: 4200, tokensAfter: 860, type: "tool_call", id: "t1", tool: "grep", input: "getUser\\( — src/**",
       why: "scope the whole job before starting it" },
     { at: 7700, tokensAfter: 1600, type: "tool_result", callId: "t1", ok: true, cue: "memory",
-      narration: "53 changes to make. Everything I read from here on stays in my memory. Watch the gauge.",
+      narration: "53 changes to make. Everything I read stays in my memory, measured in tokens — chunks of words. Watch the gauge.",
       output: "53 call sites across 14 files" },
     { at: 9100, tokensAfter: 1610, type: "step_done", planId: "p1", step: 0 },
     { at: 9800, tokensAfter: 1620, type: "step_active", planId: "p1", step: 1 },

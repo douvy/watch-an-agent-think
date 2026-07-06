@@ -30,7 +30,7 @@ the thinking" or "nothing is hidden" — only that writing is what survives.
 
 | # | fact | beat |
 |---|------|------|
-| 0 | An agent is a language model in a loop with tools. | intro line (pristine frame) |
+| 0 | An agent is an AI in a loop with tools. ("Language model" is true but defines one unknown with another — the vocab promise never included it.) | intro line (pristine frame) |
 | 1 | The loop is: think → act → observe → repeat. It has a name — the agentic loop. | done |
 | 2 | It thinks in its head too — but anything it doesn't write down is gone. The plan and transcript are the thoughts it kept. | plan |
 | 3 | It has no eyes. Tools are its only senses; the world exists only in tool results. | first failing result |
