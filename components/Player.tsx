@@ -1564,9 +1564,9 @@ export function Player() {
                     style={enterStyle(ms, state.lastEventAt + 1450)}
                     className="mt-2 block max-w-[28rem] font-serif text-[15px] leading-snug text-accent-light"
                   >
-                    That&apos;s the whole of how an agent thinks. Nothing was
-                    skipped, nothing was hidden. Next time an AI is working
-                    for you, you&apos;ll know what it&apos;s actually doing.
+                    That&apos;s how an agent thinks, start to finish. Nothing
+                    was skipped. Next time an AI is working for you,
+                    you&apos;ll know what it&apos;s actually doing.
                   </span>
                 </div>
               )}

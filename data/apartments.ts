@@ -13,7 +13,7 @@ export const apartments: Scenario = {
   id: "apartments",
   title: "Memory Fills Up",
   task: "Find me a new apartment — compare all 14 listings.",
-  lesson: "long tasks are won by forgetting well",
+  lesson: "when memory fills up, summarize and keep going",
   durationMs: 91000,
   events: [
     { at: 0, tokensAfter: 800, type: "plan", planId: "p1",
@@ -111,7 +111,7 @@ export const apartments: Scenario = {
     { at: 81900, tokensAfter: 4800, type: "tool_result", callId: "t9", ok: true, output: "3 viewings booked for Saturday",
       narration: "Three viewings booked — the shortlist did its job." },
     { at: 84000, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
-    { at: 87500, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
+    { at: 87500, tokensAfter: 4850, type: "done", verdict: "when memory fills up, summarize and keep going",
       narration: "All fourteen reviewed. I only had room to finish because I compacted.",
       takeaway: [
         "Memory is finite — every detail I read stays until I drop it.",

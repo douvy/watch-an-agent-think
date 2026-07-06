@@ -14,7 +14,7 @@ export const pressure: Scenario = {
   id: "pressure",
   title: "Memory Fills Up",
   task: "Rename getUser → fetchUser across the codebase — 14 files.",
-  lesson: "long tasks are won by forgetting well",
+  lesson: "when memory fills up, summarize and keep going",
   durationMs: 91000,
   events: [
     { at: 0, tokensAfter: 800, type: "plan", planId: "p1",
@@ -113,7 +113,7 @@ export const pressure: Scenario = {
     { at: 81900, tokensAfter: 4800, type: "tool_result", callId: "t9", ok: true, output: "0 errors, 47 passed",
       narration: "Everything passes. The rename is real." },
     { at: 84000, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
-    { at: 87500, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
+    { at: 87500, tokensAfter: 4850, type: "done", verdict: "when memory fills up, summarize and keep going",
       narration: "All fourteen done. I only had room to finish because I compacted.",
       takeaway: [
         "Memory is finite — everything I read or edit stays until I drop it.",

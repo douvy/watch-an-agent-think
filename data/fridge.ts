@@ -18,7 +18,7 @@ export const fridge: Scenario = {
   durationMs: 57400,
   events: [
     { at: 0, tokensAfter: 600, type: "plan", planId: "p1",
-      narration: "First, a plan. I don't hold thoughts in my head — I think by writing them down, step by step.",
+      narration: "First, a plan. I think in my head too. But if I don't write it down, it's gone.",
       steps: [
       "Pick the dish",
       "See what's actually here",
@@ -93,7 +93,7 @@ export const fridge: Scenario = {
     { at: 52500, tokensAfter: 3220, type: "done", verdict: "think → act → observe → repeat",
       narration: "That's the agentic loop. Drag the timeline back to rewatch any turn of it.",
       takeaway: [
-        "I wrote the plan first — writing things down is how I think.",
+        "I wrote the plan first — thoughts I don't write down are gone.",
         "I never saw your kitchen — I only knew what each look reported.",
         "I looked up the swap — answering from a guess is a hallucination.",
       ] },

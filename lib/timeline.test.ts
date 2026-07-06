@@ -131,7 +131,7 @@ test("pressure keep path: the overflow fails, then both paths compact", () => {
   const wall = s.blocks.find((b) => b.kind === "tool" && b.id === "t10");
   assert.ok(wall && wall.kind === "tool" && wall.ok === false);
   assert.ok(s.blocks.some((b) => b.kind === "compact"));
-  assert.equal(s.done, "long tasks are won by forgetting well");
+  assert.equal(s.done, "when memory fills up, summarize and keep going");
 });
 
 test("choices are pure: same (ms, choices), same state", () => {

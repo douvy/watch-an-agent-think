@@ -21,7 +21,10 @@ style with no fact, cut it. If the fact needs decoding, rewrite it.
 Eleven facts, plus two meta-facts. Each is true — nothing here would make an
 Anthropic researcher wince. Fact 4 is backed by published interpretability
 research (the "known answer" circuit misfiring; confabulation feeling
-identical to recall from the inside).
+identical to recall from the inside). Fact 2 and the meta-facts are worded
+around the global-workspace finding (2026): models do think in internal
+activations without writing anything down, so we never claim "the text is
+the thinking" or "nothing is hidden" — only that writing is what survives.
 
 ### Run 1 — The Loop (loop.ts / fridge.ts)
 
@@ -29,7 +32,7 @@ identical to recall from the inside).
 |---|------|------|
 | 0 | An agent is a language model in a loop with tools. | intro line (pristine frame) |
 | 1 | The loop is: think → act → observe → repeat. It has a name — the agentic loop. | done |
-| 2 | It thinks by writing. The plan and transcript aren't a log of the thinking — they are the thinking. | plan |
+| 2 | It thinks in its head too — but anything it doesn't write down is gone. The plan and transcript are the thoughts it kept. | plan |
 | 3 | It has no eyes. Tools are its only senses; the world exists only in tool results. | first failing result |
 | 4 | Inside, a memory and a guess feel identical — and it sounds confident either way. Answering from the guess is called a hallucination. That's why agents verify. | mid-run thought |
 | 5 | Some decisions belong to the human. A good agent stops and asks. | choice gate |
@@ -55,8 +58,8 @@ identical to recall from the inside).
 
 | # | fact | where |
 |---|------|-------|
-| M1 | The timeline isn't a recording of the agent's thinking. It *is* the thinking — an agent has no self outside its transcript. Scrub back and the later agent doesn't exist yet. | done lines invite the scrub; finale card states it |
-| M2 | Nothing is hidden. Every step of the run is on screen — that's the whole agent. | done CTA ("drag it back") |
+| M1 | The timeline is the agent's whole memory — an agent has no memory outside its transcript. Scrub back and the later agent doesn't exist yet. | done lines invite the scrub; finale card states it |
+| M2 | Every step of the run is on screen — the whole run, start to finish. | done CTA ("drag it back") |
 
 ---
 
