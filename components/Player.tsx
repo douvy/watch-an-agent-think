@@ -139,6 +139,65 @@ function enterStyle(ms: number, at: number): React.CSSProperties {
   };
 }
 
+// The trilogy landing: a window-wide mint flash and a two-second rain of
+// pixel confetti when the set-completing done fires. Pure f(ms) like all
+// motion here — pieces step down a coarse grid (discrete frames, no
+// easing), their positions hashed from their index, so scrubbing back
+// un-confettis. Renders only during the burst; the parked end frame
+// afterward belongs to the trophy card.
+const CONFETTI = Array.from({ length: 26 }, (_, i) => {
+  const h = (n: number) => {
+    const s = Math.sin(i * 127.1 + n * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  return {
+    x: 3 + h(1) * 94, // % across the window
+    delay: h(2) * 500,
+    fall: 1100 + h(3) * 500,
+    drift: (h(4) - 0.5) * 26, // px of sideways wander over the fall
+    size: 3 + Math.round(h(5) * 3),
+    color: ["#84f0a1", "#ffffc9", "#eceae0"][i % 3],
+  };
+});
+
+function FinaleBurst({ ms, at }: { ms: number; at: number }) {
+  const t = ms - at;
+  if (t <= 0 || t >= 2200) return null;
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-30 overflow-hidden"
+    >
+      {/* the tab ceremony's flash at window scale — the biggest wash in
+          the app, reserved for the biggest moment */}
+      <div
+        className="absolute inset-0 bg-accent"
+        style={{ opacity: 0.09 * (1 - clamp01(settle(ms, at + 150, gentle))) }}
+      />
+      {!reducedMotion &&
+        CONFETTI.map((c, i) => {
+          const p = (t - c.delay) / c.fall;
+          if (p <= 0 || p >= 1) return null;
+          const f = Math.floor(p * 16) / 16; // stepped, pixel-frame fall
+          return (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: `${c.x}%`,
+                top: `${f * 104}%`,
+                width: c.size,
+                height: c.size,
+                background: c.color,
+                transform: `translateX(${f * c.drift}px)`,
+              }}
+            />
+          );
+        })}
+    </div>
+  );
+}
+
 function Plan({ plan, label, ms }: { plan: PlanView; label: string; ms: number }) {
   const death = 1 - settle(ms, plan.deadAt, gentle); // 1 → 0 as death settles
   const dead = plan.deadAt !== undefined;
@@ -901,7 +960,7 @@ export function Player() {
       {/* overflow-clip, not hidden: clip still trims children to the
           rounded corners, but unlike hidden it doesn't create a scroll
           container — which would silently kill the mobile sticky transport */}
-      <div className="overflow-clip rounded-lg border border-border bg-well">
+      <div className="relative overflow-clip rounded-lg border border-border bg-well">
         {/* Title bar — chrome rows are surface, content wells stay black:
             the banding does the sectioning so text doesn't have to */}
         {/* inset highlight on the top edge — the machined-metal glint dark
@@ -1161,19 +1220,48 @@ export function Player() {
                   whether this was worth sharing. */}
               {state.done && trilogy && (
                 <div
-                  style={enterStyle(ms, state.lastEventAt + 600)}
-                  className="flex w-full items-center gap-3.5 rounded-sm border border-accent/30 bg-surface px-3 py-3"
+                  style={enterStyle(ms, state.lastEventAt + 500)}
+                  className="flex w-full flex-col items-center rounded-sm border border-accent/30 bg-surface px-4 py-4 text-center"
                 >
-                  <span className="shrink-0">
-                    <CreatureTriumph size={44} />
+                  {/* trophy sprite pops on the stamp's spring overshoot */}
+                  <span
+                    style={{
+                      transform: `scale(${settle(ms, state.lastEventAt + 700)})`,
+                    }}
+                  >
+                    <CreatureTriumph size={56} />
                   </span>
-                  <span>
-                    <span className="label block text-accent">all three watched</span>
-                    <span className="mt-0.5 block font-serif text-[15px] leading-snug text-accent-light">
-                      That&apos;s all three ways I think — plan, recover,
-                      forget. Now you know what you&apos;re watching when you
-                      watch a real one.
-                    </span>
+                  <span className="label mt-2 text-accent">
+                    all three watched
+                  </span>
+                  {/* the collection receipt — the tabs' stamps, assembled
+                      one-two-three, left to right. Kept horizontal so the
+                      whole trophy fits the stream well without cropping
+                      the crown (the stream pins to its bottom edge).
+                      Timing: the tightest run parks 2.0s after done, so
+                      every entrance below must settle by +2000ms or it
+                      freezes mid-fade at the end frame. */}
+                  <span className="mt-2.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+                    {scenarios.map((s, i) => (
+                      <span
+                        key={s.title}
+                        style={enterStyle(ms, state.lastEventAt + 900 + i * 180)}
+                        className="flex items-center gap-2 font-mono text-[12px] text-header-text"
+                      >
+                        <span className="flex h-[15px] w-[15px] items-center justify-center rounded-[3px] border border-accent/40 bg-accent/15 text-accent">
+                          <Check size={9} strokeWidth={3} />
+                        </span>
+                        {s.title}
+                      </span>
+                    ))}
+                  </span>
+                  <span
+                    style={enterStyle(ms, state.lastEventAt + 1450)}
+                    className="mt-2.5 block max-w-[28rem] font-serif text-[15px] leading-snug text-accent-light"
+                  >
+                    That&apos;s all three ways I think — plan, recover,
+                    forget. Now you know what you&apos;re watching when you
+                    watch a real one.
                   </span>
                 </div>
               )}
@@ -1394,6 +1482,10 @@ export function Player() {
             </span>
           </div>
         </div>
+
+        {state.done && trilogy && (
+          <FinaleBurst ms={ms} at={state.lastEventAt} />
+        )}
       </div>
       </div>
     </>
