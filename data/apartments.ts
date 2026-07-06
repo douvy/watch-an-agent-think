@@ -17,7 +17,7 @@ export const apartments: Scenario = {
   durationMs: 91000,
   events: [
     { at: 0, tokensAfter: 800, type: "plan", planId: "p1",
-      narration: "Fourteen apartments. Not hard — just long. And every detail I read has to fit in one finite memory.",
+      narration: "Fourteen apartments. Not hard, just long. Every detail I read has to fit in my memory — my context window.",
       steps: [
       "Gather every listing",
       "Review each one",
@@ -28,7 +28,7 @@ export const apartments: Scenario = {
     { at: 4200, tokensAfter: 860, type: "tool_call", id: "t1", tool: "look", input: "every listing in budget, this neighborhood",
       why: "scope the whole job before starting it" },
     { at: 7700, tokensAfter: 1600, type: "tool_result", callId: "t1", ok: true,
-      narration: "Fourteen places. From here it's discipline.",
+      narration: "Fourteen listings to read. Every detail stays in my memory. Watch the gauge.",
       output: "14 listings match the budget" },
     { at: 9100, tokensAfter: 1610, type: "step_done", planId: "p1", step: 0 },
     { at: 9800, tokensAfter: 1620, type: "step_active", planId: "p1", step: 1 },
@@ -81,11 +81,11 @@ export const apartments: Scenario = {
     //    summary — only the storyteller line differs.
     { at: 47600, tokensAfter: 1900, type: "compact",
       branch: { choice: "apartments-memory", option: "compress" },
-      narration: "I compress — rewriting my own memory: finished notes fold to a summary, and the room comes back.",
+      narration: "This is called compacting. I rewrite my own memory: finished notes fold to a summary, and room comes back.",
       summary: "8/14 reviewed — full notes folded to one line each. Remaining: 6 listings on the north side" },
     { at: 47600, tokensAfter: 1900, type: "compact",
       branch: { choice: "apartments-memory", option: "keep" },
-      narration: "Forced to compress after losing work — forgetting was never optional, only when.",
+      narration: "I lost work, and now I have to compact anyway. The forgetting was always going to happen.",
       summary: "8/14 reviewed — full notes folded to one line each. Remaining: 6 listings on the north side" },
     { at: 51100, tokensAfter: 1950, type: "thought",
       text: "Working from my summary now — the fine details are gone. That's the trade." },
@@ -112,7 +112,7 @@ export const apartments: Scenario = {
       narration: "Three viewings booked — the shortlist did its job." },
     { at: 84000, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
     { at: 87500, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
-      narration: "Done — I finished because I forgot well.",
+      narration: "All fourteen reviewed. I only had room to finish because I compacted.",
       takeaway: [
         "Memory is finite — every detail I read stays until I drop it.",
         "Folding finished notes to a line each bought room to finish.",

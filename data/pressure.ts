@@ -18,7 +18,7 @@ export const pressure: Scenario = {
   durationMs: 91000,
   events: [
     { at: 0, tokensAfter: 800, type: "plan", planId: "p1",
-      narration: "Fourteen files. Not hard — just long. And everything I read along the way has to fit in one finite memory.",
+      narration: "Fourteen files. Not hard, just long. Everything I read has to fit in my memory — my context window.",
       steps: [
       "Find every call site",
       "Rename across 14 files",
@@ -29,7 +29,7 @@ export const pressure: Scenario = {
     { at: 4200, tokensAfter: 860, type: "tool_call", id: "t1", tool: "grep", input: "getUser\\( — src/**",
       why: "scope the whole job before starting it" },
     { at: 7700, tokensAfter: 1600, type: "tool_result", callId: "t1", ok: true,
-      narration: "53 places to change. From here it's discipline.",
+      narration: "53 changes to make. Everything I read from here on stays in my memory. Watch the gauge.",
       output: "53 call sites across 14 files" },
     { at: 9100, tokensAfter: 1610, type: "step_done", planId: "p1", step: 0 },
     { at: 9800, tokensAfter: 1620, type: "step_active", planId: "p1", step: 1 },
@@ -83,11 +83,11 @@ export const pressure: Scenario = {
     //    branch-tagged in a pair like the tool results above.
     { at: 47600, tokensAfter: 1900, type: "compact",
       branch: { choice: "pressure-memory", option: "compress" },
-      narration: "I compress — rewriting my own memory: finished work folds to a summary, and the room comes back.",
+      narration: "This is called compacting. I rewrite my own memory: finished work folds to a summary, and room comes back.",
       summary: "8/14 files renamed — call-site detail summarized. Remaining: billing.ts, admin.ts, jobs/sync.ts, cli.ts, tests ×2" },
     { at: 47600, tokensAfter: 1900, type: "compact",
       branch: { choice: "pressure-memory", option: "keep" },
-      narration: "Forced to compress after losing work — forgetting was never optional, only when.",
+      narration: "I lost work, and now I have to compact anyway. The forgetting was always going to happen.",
       summary: "8/14 files renamed — call-site detail summarized. Remaining: billing.ts, admin.ts, jobs/sync.ts, cli.ts, tests ×2" },
     { at: 51100, tokensAfter: 1950, type: "thought",
       text: "Working from my summary now — the details are gone. That's the trade." },
@@ -114,7 +114,7 @@ export const pressure: Scenario = {
       narration: "Everything passes. The rename is real." },
     { at: 84000, tokensAfter: 4810, type: "step_done", planId: "p1", step: 3 },
     { at: 87500, tokensAfter: 4850, type: "done", verdict: "long tasks are won by forgetting well",
-      narration: "Done — I finished because I forgot well.",
+      narration: "All fourteen done. I only had room to finish because I compacted.",
       takeaway: [
         "Memory is finite — everything I read or edit stays until I drop it.",
         "Compacting traded finished detail for room to keep working.",

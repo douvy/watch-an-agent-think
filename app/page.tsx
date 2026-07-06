@@ -11,7 +11,7 @@ export default function Home() {
   // position:sticky on mobile. clip just clips.
   return (
     <div className="min-h-screen overflow-x-clip">
-      <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col bg-[#111318]">
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col bg-[#111318]">
         {/* the inner container's vertical walls — drawn as line elements
             (same pattern as the stitched rails) so nothing can eat them */}
         <span

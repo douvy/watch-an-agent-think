@@ -106,7 +106,10 @@ const CHAPTER_TONES: Record<string, string> = {
 // chapter replaces it; everything between chapters speaks as
 // face-captions inside the transcript. Pure f(ms), so scrubbing rewrites
 // it like captions.
-const INTRO_NARRATION = "I'm an agent. Press play and watch me think.";
+// Fact 0, in the mascot's voice. "Press play" is the whole CTA — the h1
+// already promises the watching, so the tail would only echo it.
+const INTRO_NARRATION =
+  "I'm an AI agent — a language model in a loop with tools. Press play.";
 
 function narrationOf(
   scenario: Scenario,
@@ -391,7 +394,7 @@ function StreamBlock({
           </div>
         )}
         {block.pending ? (
-          <div className="mt-1 pl-5 text-[11px] text-[#636a76]">running…</div>
+          <div className="mt-1 pl-5 text-[11px] text-[#a9adb9]">running…</div>
         ) : (
           <div
             style={enterStyle(ms, block.resultAt ?? block.at)}
@@ -475,7 +478,7 @@ function StreamBlock({
           })}
         </div>
         {!pending && (
-          <div className="mt-2 font-mono text-[10px] text-[#636a76]">
+          <div className="mt-2 font-mono text-[10px] text-[#a9adb9]">
             switch anytime — everything after rewrites
           </div>
         )}
@@ -1053,7 +1056,7 @@ export function Player() {
     <>
       {/* Hero — live. The mascot and the narration line run off the same
           (scenario, ms) as the window below; the display type stays still. */}
-      <header className="relative px-5 py-3 md:px-10 md:py-5">
+      <header className="relative px-5 py-3 md:px-10 md:pt-4 md:pb-3">
         {/* the bottom rule runs full-bleed past the page rails — Zed's
             drafting-table grid: horizontal and vertical lines cross */}
         <span
@@ -1086,9 +1089,33 @@ export function Player() {
         {/* Masthead — serif italic, sentence case, natural tracking: an
             invitation in the storyteller's voice, Zed-headline style. The
             marquee below is still the biggest type; the brand stays quiet. */}
-        <h1 className="text-center font-serif text-[15px] text-[#a9adb6] italic md:text-[16px]">
+        <h1 className="text-center font-serif text-[18px] text-[#a9adb6] italic md:text-[20px]">
           Watch how an AI agent thinks
         </h1>
+        {/* Syllabus line — the one static string on the page: names what
+            the three tabs add up to, so the toy reads as a course. Never
+            changes (the marquee below owns all moving words). The three
+            items are Zed-style inline chips — mono on a mint tint, each
+            wearing the same check the finale receipt pays off: the
+            promise at the door, the receipt on the way out. */}
+        <p className="mx-auto mt-1.5 flex max-w-lg flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[15px] tracking-tight text-muted md:max-w-none">
+          Three things everyone should know about AI agents:
+          {["how they work", "how they recover", "why they forget"].map(
+            (t) => (
+              <span
+                key={t}
+                className="flex items-center gap-1 rounded-[3px] bg-accent/10 px-1 py-0.5 font-mono text-xs text-header-text"
+              >
+                <Check
+                  size={10}
+                  strokeWidth={2}
+                  className="text-accent opacity-80"
+                />
+                {t}
+              </span>
+            ),
+          )}
+        </p>
 
         {/* Live marquee — desktop only: on phones the storyteller folds
             into the window (see the mobile strip below the task bar), so
@@ -1096,7 +1123,7 @@ export function Player() {
             text column fills the space between the mascot and its twin,
             so the group's width never changes — no sliding as the line
             length changes, and long lines get the whole rail. */}
-        <div className="mt-4 hidden items-center justify-center gap-3 md:flex">
+        <div className="mt-3 hidden items-center justify-center gap-3 md:flex">
           {/* trilogy done: the storyteller wears the finale card's crown —
               same rule as the card, only while parked at the end frame */}
           {state.done && trilogy ? (
@@ -1125,7 +1152,7 @@ export function Player() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 pt-3 pb-6 md:px-10 md:py-6">
+      <div className="flex-1 px-4 pt-3 pb-6 md:px-10 md:pt-3 md:pb-6">
       {/* Player shell — window anatomy: title bar, tabs, task, panels, status.
           Chrome on surface, content wells on well: the window reads as a
           warm tonal object on the black page, Zed-style. */}
@@ -1148,7 +1175,7 @@ export function Player() {
             </div>
             <div
               aria-hidden
-              className="hidden flex-1 items-center gap-1.5 px-3 font-mono text-[10px] text-[#636a76] sm:flex"
+              className="hidden flex-1 items-center gap-1.5 px-3 font-mono text-[10px] text-[#aaafbb] sm:flex"
             >
               <Search size={10} />
               Search…
@@ -1291,7 +1318,7 @@ export function Player() {
               <span className="text-human/60">&rdquo;</span>
             </span>
           </div>
-          <span className="ml-auto hidden shrink-0 pl-3 font-mono text-[10px] text-[#636a76] md:block">
+          <span className="ml-auto hidden shrink-0 pl-3 font-mono text-[10px] text-[#a9adb9] md:block">
             {(scenario.durationMs / 1000).toFixed(0)}s · {activeEvents.length} events
           </span>
         </div>
@@ -1348,7 +1375,7 @@ export function Player() {
                 />
               ))}
               {state.plans.length === 0 && (
-                <div className="font-mono text-[12px] text-[#636a76]">—</div>
+                <div className="font-mono text-[12px] text-[#a9adb9]">—</div>
               )}
             </div>
           </section>
@@ -1382,7 +1409,7 @@ export function Player() {
                 ),
               )}
               {state.blocks.length === 0 && (
-                <div className="font-mono text-[12px] text-[#636a76]">waiting…</div>
+                <div className="font-mono text-[12px] text-[#a9adb9]">waiting…</div>
               )}
               {/* End-card — the teachable moment is completion, not arrival:
                   when a run finishes, point at the next story. Pure f(ms):
@@ -1417,47 +1444,53 @@ export function Player() {
               {state.done && trilogy && (
                 <div
                   style={enterStyle(ms, state.lastEventAt + 500)}
-                  className="flex w-full flex-col items-center rounded-sm border border-accent/30 bg-surface px-4 py-4 text-center"
+                  className="flex w-full flex-col items-center rounded-sm border border-accent/30 bg-surface px-4 py-3 text-center"
                 >
-                  {/* trophy sprite pops on the stamp's spring overshoot */}
+                  {/* trophy sprite pops on the stamp's spring overshoot —
+                      40px here (the marquee twin wears the 56 crown); the
+                      verdict rows below bought their room from this card */}
                   <span
                     style={{
                       transform: `scale(${settle(ms, state.lastEventAt + 700)})`,
                     }}
                   >
-                    <CreatureTriumph size={56} />
+                    <CreatureTriumph size={40} />
                   </span>
-                  <span className="label mt-2 text-accent">
+                  <span className="label mt-1 text-accent">
                     all three watched
                   </span>
-                  {/* the collection receipt — the tabs' stamps, assembled
-                      one-two-three, left to right. Kept horizontal so the
-                      whole trophy fits the stream well without cropping
-                      the crown (the stream pins to its bottom edge).
-                      Timing: the tightest run parks 2.0s after done, so
-                      every entrance below must settle by +2000ms or it
-                      freezes mid-fade at the end frame. */}
-                  <span className="mt-2.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+                  {/* the collection receipt — one check per run, stamped
+                      one-two-three, but each carries its verdict, not its
+                      title (the tabs above still wear the titles and
+                      ticks). This is what the reader takes out the door:
+                      the three promises from the masthead's syllabus
+                      line, earned. The rows' height came out of the trophy
+                      and the paddings, so the whole card still fits the
+                      stream without cropping the crown (the stream pins
+                      to its bottom edge). Timing: the tightest run parks
+                      2.0s after done, so every entrance below must settle
+                      by +2000ms or it freezes mid-fade at the end frame. */}
+                  <span className="mt-1 flex flex-col items-center gap-0.5">
                     {scenarios.map((s, i) => (
                       <span
-                        key={s.title}
+                        key={s.id}
                         style={enterStyle(ms, state.lastEventAt + 900 + i * 180)}
                         className="flex items-center gap-2 font-mono text-[12px] text-header-text"
                       >
                         <span className="flex h-[15px] w-[15px] items-center justify-center rounded-[3px] border border-accent/40 bg-accent/15 text-accent">
                           <Check size={9} strokeWidth={3} />
                         </span>
-                        {s.title}
+                        {s.lesson}
                       </span>
                     ))}
                   </span>
                   <span
                     style={enterStyle(ms, state.lastEventAt + 1450)}
-                    className="mt-2.5 block max-w-[28rem] font-serif text-[15px] leading-snug text-accent-light"
+                    className="mt-2 block max-w-[28rem] font-serif text-[15px] leading-snug text-accent-light"
                   >
-                    That&apos;s all three ways I think — plan, recover,
-                    forget. Now you know what you&apos;re watching when you
-                    watch a real one.
+                    That&apos;s the whole of how an agent thinks. Nothing was
+                    skipped, nothing was hidden. Next time an AI is working
+                    for you, you&apos;ll know what it&apos;s actually doing.
                   </span>
                 </div>
               )}
@@ -1505,7 +1538,7 @@ export function Player() {
               <div className="font-mono text-[15px] leading-none text-header-text md:text-[26px]">
                 {displayTokens.toLocaleString()}
               </div>
-              <div className="font-mono text-[10px] text-[#636a76] md:mt-1 md:text-[11px]">
+              <div className="font-mono text-[10px] text-[#a9adb9] md:mt-1 md:text-[11px]">
                 / {CONTEXT_BUDGET.toLocaleString()} tokens
               </div>
               <div className="relative h-1 flex-1 bg-hover-bg md:mt-3 md:w-full md:flex-none">
@@ -1584,7 +1617,7 @@ export function Player() {
           {/* current time bright, total dim — the number that moves leads */}
           <span className="w-20 shrink-0 text-right font-mono text-[11px]">
             <span className="text-[#dcdfe3]">{(ms / 1000).toFixed(1)}</span>
-            <span className="text-[#636a76]"> / {(scenario.durationMs / 1000).toFixed(0)}s</span>
+            <span className="text-[#a9adb9]"> / {(scenario.durationMs / 1000).toFixed(0)}s</span>
           </span>
         </div>
 
@@ -1610,8 +1643,8 @@ export function Player() {
                   active
                     ? "text-header-text"
                     : reachable
-                      ? "text-[#636a76] hover:text-muted"
-                      : "cursor-default text-[#3f434d]"
+                      ? "text-[#7b8290] hover:text-[#a9adb9]"
+                      : "cursor-default text-[#4a4f59]"
                 }`}
               >
                 <span className={active ? (CHAPTER_TONES[ch.label] ?? "text-accent") : ""}>

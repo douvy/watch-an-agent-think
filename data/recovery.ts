@@ -41,7 +41,7 @@ export const recovery: Scenario = {
       narration: "I bet the plan on it — raise the limit.",
       input: "db.config.ts — raise pool max 10 → 50" },
     { at: 19600, tokensAfter: 1650, type: "tool_result", callId: "t2", ok: true, output: "pool size raised",
-      narration: "The change is in. Theories need proof." },
+      narration: "The change is made. I haven't seen it work yet." },
     { at: 21000, tokensAfter: 1660, type: "step_done", planId: "p1", step: 2 },
     { at: 21700, tokensAfter: 1670, type: "step_active", planId: "p1", step: 3 },
     { at: 23100, tokensAfter: 1720, type: "tool_call", id: "t3", tool: "bash",
@@ -118,7 +118,7 @@ export const recovery: Scenario = {
       narration: "It passes — because I let plan A die." },
     { at: 81900, tokensAfter: 5010, type: "step_done", planId: "p2", step: 3 },
     { at: 84700, tokensAfter: 5050, type: "done", verdict: "recovery means distrusting your plan",
-      narration: "Done. Scrub back — the plan dies every time.",
+      narration: "Done. Scrub back and pick the other path. The plan dies either way.",
       takeaway: [
         "Plan A was a bet on one theory — the check exposed it.",
         "When the fix failed, the plan was the suspect, not just the fix.",
