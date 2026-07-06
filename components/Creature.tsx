@@ -186,8 +186,11 @@ export function Creature({
       style={{ overflow: "visible" }} // hops cross the viewBox top by 1px
     >
       <g transform={`translate(0 ${dy})`}>
-      {/* thought dots, rising up-right while idle */}
-      {mood === "idle" && (
+      {/* thought dots, rising up-right while idle — but not at the parked
+          landing frame: frozen at ms=0 a single dot reads as a stray pixel
+          on his head, not a thought. He waits clean-headed; the dots start
+          rising the moment time moves. */}
+      {mood === "idle" && ms > 0 && (
         <g fill={DOT}>
           {dotCount >= 1 && <rect x="6" y="2" width="1" height="1" />}
           {dotCount >= 2 && <rect x="8" y="1" width="1" height="1" />}
