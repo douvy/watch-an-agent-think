@@ -1100,7 +1100,10 @@ export function Player() {
         {/* Mobile storyteller — the hero marquee, folded into the machine:
             mascot and narration sit directly above the stream so the story
             reads as one column on a phone. Same (state, ms) as everything. */}
-        <div className="flex items-center gap-3 border-b border-border px-4 py-2.5 md:hidden">
+        {/* sticky: the voice brackets the phone with the transport —
+            narration locked top, controls locked bottom, story scrolling
+            between them */}
+        <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-well px-4 py-2.5 md:hidden">
           {state.done && trilogy ? (
             <CreatureTriumph size={32} />
           ) : (
