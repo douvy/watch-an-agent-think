@@ -900,25 +900,35 @@ export function Player() {
             drafting-table grid: horizontal and vertical lines cross */}
         <span
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-1/2 h-px w-screen -translate-x-1/2 bg-[#1a1a1a]"
+          className="pointer-events-none absolute bottom-0 left-1/2 h-px w-screen -translate-x-1/2 bg-[#1d1e22]"
         />
-        {/* registration marks on the bottom rule — drafting-table signature */}
+        {/* bordered pixel nodes on the crossings where the rule meets the
+            walls — a size up from the outer-rail dots, page fill inside a
+            1px gray border, like a rivet seated over the grid */}
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-[7px] -left-[4px] font-mono text-[9px] leading-none text-[#4d525e] select-none"
-        >
-          +
-        </span>
+          className="pointer-events-none absolute -bottom-[2px] -left-[2px] z-10 hidden h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318] md:block"
+        />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-[4px] -bottom-[7px] font-mono text-[9px] leading-none text-[#4d525e] select-none"
-        >
-          +
-        </span>
-        {/* Masthead — one centered mono spec-sheet line, same voice as the
-            machine's labels. The storyteller marquee below is the biggest
-            type on the page; the brand stays quiet. */}
-        <h1 className="text-center font-mono text-[11px] font-medium tracking-[0.14em] text-[#a9adb6] uppercase md:text-[12px]">
+          className="pointer-events-none absolute -right-[2px] -bottom-[2px] z-10 hidden h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318] md:block"
+        />
+        {/* the same nodes where this rule crosses the stitched outer
+            rails — every intersection on the page gets the same rivet */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-[2px] z-10 hidden h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318] xl:block"
+          style={{ left: "calc(-3rem - 3px)" }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-[2px] z-10 hidden h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318] xl:block"
+          style={{ right: "calc(-3rem - 3px)" }}
+        />
+        {/* Masthead — serif italic, sentence case, natural tracking: an
+            invitation in the storyteller's voice, Zed-headline style. The
+            marquee below is still the biggest type; the brand stays quiet. */}
+        <h1 className="text-center font-serif text-[15px] text-[#a9adb6] italic md:text-[16px]">
           Watch how an AI agent thinks
         </h1>
 
@@ -1094,8 +1104,14 @@ export function Player() {
             <span aria-hidden className="absolute top-0 bottom-0 -left-px w-[2px] bg-human" />
             {/* mobile wraps the full task — nothing the human said gets cut;
                 desktop has the width to keep it on one line */}
+            {/* quoted: the flag says who, the quotes say *said* — without
+                them the line reads as a filename to anyone who doesn't
+                know Zed's collaborator idiom. Dimmer than the words, like
+                punctuation should be. */}
             <span className="block bg-human/10 py-[3px] pr-1.5 pl-2 font-mono text-[14px] text-[#f0f2f5] md:truncate">
+              <span className="text-human/60">&ldquo;</span>
               {scenario.task}
+              <span className="text-human/60">&rdquo;</span>
             </span>
           </div>
           <span className="ml-auto hidden shrink-0 pl-3 font-mono text-[10px] text-[#636a76] md:block">

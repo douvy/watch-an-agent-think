@@ -3,11 +3,13 @@
 /* Design tokens ported from pokeport — the house style.
    Dark only. All motion goes through lib/spring.ts — no CSS easing. */
 
-/* Warm terminal palette. Black page; the player window is a tonal object
-   sitting on it — chrome on --surface, content wells on --well, the way
-   Zed's panels layer inside its frame. */
+/* Warm terminal palette. Near-black page in the surfaces' own hue; the
+   player window is a tonal object sitting on it — chrome on --surface,
+   content wells on --well, the way Zed's panels layer inside its frame. */
 :root {
-  --background: #000000;
+  /* the void — outermost of the page's three fills, one whisper step
+     below the gutter and table (see app/page.tsx) */
+  --background: #101216;
   --foreground: #d9dce0;
   --surface: #30343d;
   --well: #292c33;
