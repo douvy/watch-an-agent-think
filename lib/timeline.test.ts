@@ -217,6 +217,24 @@ test("everyday runs mirror their code twins: one gate, same verdicts", () => {
   }
 });
 
+// The transcript's second voice: tool calls may carry a `why` — the agent's
+// stated reason for reaching for that tool. Whys read as annotations, so
+// they stay one-breath short; and every run's first action opens with one,
+// so the decision → action → evidence rhythm is set from the top.
+test("whys are one-breath short and every run opens with one", () => {
+  for (const sc of all) {
+    const calls = sc.events.filter((e) => e.type === "tool_call");
+    assert.ok(
+      calls[0].type === "tool_call" && calls[0].why,
+      `${sc.id}: first tool call carries no why`,
+    );
+    for (const c of calls) {
+      if (c.type !== "tool_call" || !c.why) continue;
+      assert.ok(c.why.length <= 72, `${sc.id} at ${c.at}: why runs long`);
+    }
+  }
+});
+
 test("every branch tag names a real choice and option", () => {
   for (const sc of all) {
     for (const e of sc.events) {

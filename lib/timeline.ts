@@ -30,7 +30,9 @@ export type TimelineEvent = {
   | { type: "step_active"; planId: string; step: number }
   | { type: "step_done"; planId: string; step: number }
   | { type: "thought"; text: string }
-  | { type: "tool_call"; id: string; tool: string; input: string }
+  /** `why` is the agent's stated reason for reaching for this tool — the
+      transcript's own voice, independent of the storyteller line. */
+  | { type: "tool_call"; id: string; tool: string; input: string; why?: string }
   | { type: "tool_result"; callId: string; ok: boolean; output: string }
   | { type: "plan_dead"; planId: string; reason: string }
   | { type: "compact"; summary: string }
@@ -90,6 +92,7 @@ export type Block =
       id: string;
       tool: string;
       input: string;
+      why?: string;
       pending: boolean;
       resultAt?: number;
       ok?: boolean;
@@ -164,6 +167,7 @@ export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): 
           id: e.id,
           tool: e.tool,
           input: e.input,
+          why: e.why,
           pending: true,
         });
         break;

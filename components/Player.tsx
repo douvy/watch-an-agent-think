@@ -364,6 +364,14 @@ function StreamBlock({
           <span className="text-link">{block.tool}</span>
           <span className="truncate text-muted">{block.input}</span>
         </div>
+        {/* The agent's stated reason for this action — the thought register
+            (serif italic) at annotation size, so the transcript reads
+            decision → action → evidence on its own */}
+        {block.why && (
+          <div className="mt-0.5 pl-5 font-serif text-[13px] leading-snug text-muted italic">
+            {block.why}
+          </div>
+        )}
         {block.pending ? (
           <div className="mt-1 pl-5 text-[11px] text-[#636a76]">running…</div>
         ) : (
