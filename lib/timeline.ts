@@ -16,9 +16,11 @@ export type ChoiceOption = { id: string; label: string };
     determined: same (ms, choices) in, same frame out. */
 export type Choices = Record<string, string>;
 
-// `narration` is the storyteller line for the hero marquee — hand-written
-// per beat, in the mascot's first-person voice. Events without one fall
-// back to a generic line per event type.
+// `narration` is the mascot's hand-written line for a beat. Where it shows
+// depends on the beat: on chapter turns (see isChapterBeat) it speaks in
+// the hero marquee and owns the room; on tool calls and passing results it
+// renders as a face-caption inside the transcript, next to its evidence.
+// Thoughts never narrate — the thought text already is the transcript line.
 export type TimelineEvent = {
   at: number;
   tokensAfter: number;
@@ -37,7 +39,9 @@ export type TimelineEvent = {
   | { type: "plan_dead"; planId: string; reason: string }
   | { type: "compact"; summary: string }
   | { type: "choice"; choiceId: string; prompt: string; options: ChoiceOption[] }
-  | { type: "done"; verdict: string }
+  /** `takeaway` is the run's recap — two or three concrete lines tying
+      what the reader just watched to the lesson, shown on the done card. */
+  | { type: "done"; verdict: string; takeaway?: string[] }
 );
 
 export interface Scenario {
@@ -47,6 +51,21 @@ export interface Scenario {
   lesson: string;
   durationMs: number;
   events: TimelineEvent[];
+}
+
+/** Chapter turns — the beats where the chapter strip advances and the
+    marquee is allowed to speak. Everything between chapters belongs to the
+    transcript, so the reader always has exactly one place to look: the top
+    when the columns are quiet, the columns when the top is quiet. */
+export function isChapterBeat(e: TimelineEvent): boolean {
+  return (
+    e.type === "plan" ||
+    e.type === "plan_dead" ||
+    e.type === "compact" ||
+    e.type === "choice" ||
+    e.type === "done" ||
+    (e.type === "tool_result" && !e.ok)
+  );
 }
 
 /** Fill unanswered choices with their first option — the canonical path. */
@@ -93,10 +112,16 @@ export type Block =
       tool: string;
       input: string;
       why?: string;
+      /** The call's narration, shown as a face-caption (wins over `why`). */
+      note?: string;
       pending: boolean;
       resultAt?: number;
       ok?: boolean;
       output?: string;
+      /** A passing result's narration — the mascot reacting to evidence,
+          captioned under the output. Failing results narrate in the marquee
+          instead: a setback is a chapter turn. */
+      resultNote?: string;
       absorbedAt?: number;
     }
   | { kind: "compact"; at: number; summary: string }
@@ -109,7 +134,7 @@ export type Block =
       /** The reader's explicit pick; undefined while the question is live. */
       picked?: string;
     }
-  | { kind: "done"; at: number; verdict: string };
+  | { kind: "done"; at: number; verdict: string; takeaway?: string[] };
 
 export interface TimelineState {
   plans: PlanView[];
@@ -168,6 +193,7 @@ export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): 
           tool: e.tool,
           input: e.input,
           why: e.why,
+          note: e.narration,
           pending: true,
         });
         break;
@@ -178,6 +204,8 @@ export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): 
           call.resultAt = e.at;
           call.ok = e.ok;
           call.output = e.output;
+          // failing results narrate up top (chapter turn), not in the column
+          if (e.ok) call.resultNote = e.narration;
         }
         break;
       }
@@ -215,7 +243,7 @@ export function stateAt(scenario: Scenario, ms: number, choices: Choices = {}): 
         break;
       case "done":
         done = e.verdict;
-        blocks.push({ kind: "done", at: e.at, verdict: e.verdict });
+        blocks.push({ kind: "done", at: e.at, verdict: e.verdict, takeaway: e.takeaway });
         break;
     }
   }

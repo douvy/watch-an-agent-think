@@ -178,6 +178,36 @@ export function CreatureBlueprint({ scale = 7 }: { scale?: number }) {
   );
 }
 
+// Head-only crop of the sprite — an avatar, not a character. It marks the
+// `why` annotations in the transcript as the mascot's own voice, so his
+// reasoning reads as speech instead of floating metadata.
+export function CreatureFace({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={(size * 9) / 12}
+      viewBox="2 1 12 9"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      <g fill={BODY}>
+        {/* ears */}
+        <rect x="3" y="1" width="1" height="1" />
+        <rect x="3" y="2" width="2" height="1" />
+        <rect x="3" y="3" width="3" height="1" />
+        <rect x="12" y="1" width="1" height="1" />
+        <rect x="11" y="2" width="2" height="1" />
+        <rect x="10" y="3" width="3" height="1" />
+        {/* head */}
+        <rect x="2" y="4" width="12" height="6" />
+      </g>
+      <rect x="3" y="5" width="10" height="4" fill={PATCH} />
+      <rect x="5" y="6" width="2" height="2" fill={GREEN} />
+      <rect x="9" y="6" width="2" height="2" fill={GREEN} />
+    </svg>
+  );
+}
+
 export function Creature({
   state,
   ms,

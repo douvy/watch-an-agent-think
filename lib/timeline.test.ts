@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { stateAt, eventActive, resolveChoices } from "./timeline.ts";
+import { stateAt, isChapterBeat } from "./timeline.ts";
 import { loop } from "../data/loop.ts";
 import { recovery } from "../data/recovery.ts";
 import { pressure } from "../data/pressure.ts";
@@ -162,34 +162,40 @@ test("event timestamps are monotonic and within duration", () => {
   }
 });
 
-// The pacing contract: a storyteller line must live long enough to read
-// (~250wpm) before the next line replaces it. "Feels too fast" becomes a
-// named beat, not a vibe — and every future scenario inherits the meter.
-// Choice beats park the clock, so their lines get the reader's own patience.
-test("every narration line lives long enough to read", () => {
-  const MS_PER_WORD = 240;
+// The pacing contract, dwell edition: playback parks the world at every
+// narrated chapter beat for words × 300ms (see Player's clock), so a line's
+// reading time no longer depends on timeline gaps — it depends on its own
+// length. The cap keeps any single freeze under six seconds; past that the
+// pause reads as a hang, not a beat. Choice beats park on the reader's own
+// patience and done ends the clock, but the same cap keeps their register.
+test("every marquee line fits its dwell", () => {
+  const MAX_WORDS = 20;
   const words = (s: string) => s.split(/\s+/).filter((w) => /\w/.test(w)).length;
   for (const sc of all) {
-    const gates = sc.events.filter((e) => e.type === "choice");
-    // one path per option — each covers the full spine plus one branch.
-    // Gate-less scripts (the everyday track) still get their one path.
-    const paths = gates.length
-      ? gates.flatMap((g) =>
-          g.type === "choice" ? g.options.map((o) => ({ [g.choiceId]: o.id })) : [],
-        )
-      : [{} as Record<string, string>];
-    for (const picks of paths) {
-      const resolved = resolveChoices(sc, picks);
-      const lines = sc.events.filter((e) => e.narration && eventActive(e, resolved));
-      lines.forEach((e, i) => {
-        if (e.type === "choice") return; // the clock parks here
-        const lives = (lines[i + 1]?.at ?? sc.durationMs) - e.at;
-        const needs = words(e.narration!) * MS_PER_WORD;
-        assert.ok(
-          lives >= needs,
-          `${sc.id}(${Object.values(picks)}) @${e.at} "${e.narration}" lives ${lives}ms, needs ${needs}ms`,
-        );
-      });
+    for (const e of sc.events) {
+      if (!e.narration || !isChapterBeat(e)) continue;
+      assert.ok(
+        words(e.narration) <= MAX_WORDS,
+        `${sc.id} @${e.at} "${e.narration}" runs ${words(e.narration)} words`,
+      );
+    }
+  }
+});
+
+// The marquee is the documentary voiceover: it speaks exactly when the
+// chapter strip advances, and is silent between chapters — those beats
+// belong to the transcript. So every chapter turn must carry a line, and
+// thoughts must never narrate (the thought text IS the transcript line;
+// narrating it too is reading the same sentence in two places).
+test("the marquee speaks at every chapter turn and only there", () => {
+  for (const sc of all) {
+    for (const e of sc.events) {
+      if (isChapterBeat(e)) {
+        assert.ok(e.narration, `${sc.id} at ${e.at}: silent chapter turn (${e.type})`);
+      }
+      if (e.type === "thought") {
+        assert.ok(!e.narration, `${sc.id} at ${e.at}: thought carries dead narration`);
+      }
     }
   }
 });
@@ -231,6 +237,39 @@ test("whys are one-breath short and every run opens with one", () => {
     for (const c of calls) {
       if (c.type !== "tool_call" || !c.why) continue;
       assert.ok(c.why.length <= 72, `${sc.id} at ${c.at}: why runs long`);
+    }
+  }
+});
+
+// One voice per beat: a tool call's caption shows its narration or its
+// why, never both — carrying both means one line is dead weight. Sole
+// exception: the beat right after a gate may carry both, because the
+// first-action contract below still wants its why in the data even when
+// the pick-acknowledgment narration wins the caption.
+test("action beats speak with one voice", () => {
+  for (const sc of all) {
+    const gates = sc.events.filter((e) => e.type === "choice");
+    for (const e of sc.events) {
+      if (e.type !== "tool_call" || !e.narration || !e.why) continue;
+      const afterGate = gates.some((g) => e.at > g.at && e.at - g.at <= 2800);
+      assert.ok(afterGate, `${sc.id} at ${e.at}: narration and why on one beat`);
+    }
+  }
+});
+
+// The educational close: every run must end with a recap — two or three
+// concrete lines pointing back at things the reader just watched, so the
+// verdict lands as reasoning, not a slogan. Lines stay caption-short.
+test("every run ends with a short, concrete takeaway", () => {
+  for (const sc of all) {
+    const done = sc.events.find((e) => e.type === "done");
+    assert.ok(done && done.type === "done" && done.takeaway, `${sc.id}: no takeaway`);
+    assert.ok(
+      done.takeaway.length >= 2 && done.takeaway.length <= 3,
+      `${sc.id}: ${done.takeaway.length} takeaway lines`,
+    );
+    for (const t of done.takeaway) {
+      assert.ok(t.length <= 72, `${sc.id}: takeaway runs long — "${t}"`);
     }
   }
 });

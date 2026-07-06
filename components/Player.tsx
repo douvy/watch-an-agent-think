@@ -17,13 +17,14 @@ import {
   VolumeX,
 } from "lucide-react";
 import { scenarioSets, type Mode } from "@/data";
-import { Creature, CreatureTriumph } from "@/components/Creature";
+import { Creature, CreatureFace, CreatureTriumph } from "@/components/Creature";
 import { chirp, ratchet, unlock } from "@/lib/sound";
 import { createSpring, presets } from "@/lib/spring";
 import {
   stateAt,
   resolveChoices,
   eventActive,
+  isChapterBeat,
   CONTEXT_BUDGET,
   type Block,
   type Choices,
@@ -90,11 +91,13 @@ const CHAPTER_TONES: Record<string, string> = {
   decision: "text-human",
 };
 
-// Narration — the storyteller track, in the mascot's first-person voice.
-// Only hand-written lines speak: a line persists until the author replaces
-// it, so quiet beats stay quiet and the marquee keeps a reading rhythm
-// (enforced by the legibility test in lib/timeline.test.ts). Derived from
-// the last narrated event, so scrubbing rewrites it like captions.
+// Narration — the documentary voiceover, in the mascot's first-person
+// voice. It speaks only at chapter turns (the same beats that advance the
+// chapter strip), which are exactly the moments the transcript is quiet —
+// so the reader is never asked to read two places at once. A line persists
+// until the next chapter replaces it; everything between chapters speaks
+// as face-captions inside the transcript. Derived from the last narrated
+// chapter beat, so scrubbing rewrites it like captions.
 const INTRO_NARRATION = "I'm an agent. Press play and watch me think.";
 
 function narrationOf(
@@ -105,7 +108,8 @@ function narrationOf(
   let out = { at: 0, text: INTRO_NARRATION };
   for (let i = 0; i <= lastEventIndex; i++) {
     const e = scenario.events[i];
-    if (e.narration && eventActive(e, resolved)) out = { at: e.at, text: e.narration };
+    if (e.narration && isChapterBeat(e) && eventActive(e, resolved))
+      out = { at: e.at, text: e.narration };
   }
   return out;
 }
@@ -364,12 +368,14 @@ function StreamBlock({
           <span className="text-link">{block.tool}</span>
           <span className="truncate text-muted">{block.input}</span>
         </div>
-        {/* The agent's stated reason for this action — the thought register
-            (serif italic) at annotation size, so the transcript reads
-            decision → action → evidence on its own */}
-        {block.why && (
-          <div className="mt-0.5 pl-5 font-serif text-[13px] leading-snug text-muted italic">
-            {block.why}
+        {/* The mascot speaking about his own action — his face in front of
+            it makes it read as speech, not floating metadata, so the
+            transcript reads decision → action → evidence on its own. One
+            line per call: the beat's narration if it has one, else the why */}
+        {(block.note ?? block.why) && (
+          <div className="mt-1 flex items-center gap-1.5 pl-5 font-serif text-[13px] leading-snug text-foreground">
+            <span className="shrink-0"><CreatureFace size={13} /></span>
+            <span>{block.note ?? block.why}</span>
           </div>
         )}
         {block.pending ? (
@@ -384,6 +390,14 @@ function StreamBlock({
             }`}
           >
             {block.output}
+            {/* His reaction to the evidence — captioned right under it,
+                so interpretation never asks the eye to leave the column */}
+            {block.resultNote && (
+              <div className="mt-1 flex items-center gap-1.5 font-serif text-[13px] leading-snug text-foreground">
+                <span className="shrink-0"><CreatureFace size={13} /></span>
+                <span>{block.resultNote}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -486,6 +500,21 @@ function StreamBlock({
       <div className="font-serif text-[17px] text-header-text italic">
         {block.verdict}
       </div>
+      {/* The recap — the run's evidence for its verdict, so the reader
+          leaves with the reasoning, not just the slogan */}
+      {block.takeaway && (
+        <ul className="mt-2 space-y-1">
+          {block.takeaway.map((t) => (
+            <li
+              key={t}
+              className="flex gap-2 font-serif text-[13px] leading-snug text-foreground"
+            >
+              <span className="shrink-0 text-accent">·</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -765,11 +794,36 @@ export function Player() {
   // Unanswered choices are gates: the clock parks at at + HOLD_MS (the
   // beat's settle point) and waits. Answering removes the gate, so the
   // effect re-arms with one fewer stop.
+  //
+  // Chapter dwells — motion always wins the eye, so when the narrator
+  // speaks, the world holds still: crossing a narrated chapter turn, the
+  // clock runs to the beat's settle point (at + HOLD_MS) and then parks
+  // for as long as the line takes to read (words × 300ms). Wall-clock
+  // only — scrubbing never dwells, and ms-purity is untouched. Choices
+  // park via gates; done ends the clock, so neither dwells.
   useEffect(() => {
     if (!playing) return;
     const gates = scenario.events
       .filter((e) => e.type === "choice" && !(e.choiceId in choices))
       .map((e) => Math.min(e.at + HOLD_MS, scenario.durationMs));
+    const resolved = resolveChoices(scenario, choices);
+    const dwells = scenario.events
+      .filter(
+        (e) =>
+          e.narration &&
+          isChapterBeat(e) &&
+          e.type !== "choice" &&
+          e.type !== "done" &&
+          eventActive(e, resolved),
+      )
+      .map((e) => ({
+        at: Math.min(e.at + HOLD_MS, scenario.durationMs),
+        wait: Math.max(
+          1200,
+          e.narration!.split(/\s+/).filter((w) => /\w/.test(w)).length * 300,
+        ),
+      }));
+    let dwellUntil = 0;
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -778,12 +832,21 @@ export function Player() {
       // first dt would drive ms below zero (NaN pixel frames in the mascot).
       const dt = Math.max(0, now - last);
       last = now;
+      if (now < dwellUntil) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       setMs((m) => {
         const next = m + dt;
         const gate = gates.find((g) => m < g && next >= g);
         if (gate !== undefined) {
           setPlaying(false);
           return gate;
+        }
+        const dwell = dwells.find((d) => m < d.at && next >= d.at);
+        if (dwell) {
+          dwellUntil = now + dwell.wait;
+          return dwell.at;
         }
         if (next >= scenario.durationMs) {
           setPlaying(false);
@@ -1015,8 +1078,9 @@ export function Player() {
         {/* Live marquee — desktop only: on phones the storyteller folds
             into the window (see the mobile strip below the task bar), so
             narration and the stream it describes share one screen. The
-            text column is fixed-width so the centered group never changes
-            width — no sliding as the line length changes. */}
+            text column fills the space between the mascot and its twin,
+            so the group's width never changes — no sliding as the line
+            length changes, and long lines get the whole rail. */}
         <div className="mt-4 hidden items-center justify-center gap-3 md:flex">
           {/* trilogy done: the storyteller wears the finale card's crown —
               same rule as the card, only while parked at the end frame */}
@@ -1030,7 +1094,7 @@ export function Player() {
           {/* the marquee speaks mint in the agent's voice; when the question
               is the reader's, it speaks the human's cream */}
           <p
-            className={`min-h-[2.6em] max-w-xl text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:w-[36rem] md:text-[24px] ${
+            className={`min-h-[2.6em] flex-1 text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:text-[24px] ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
             style={
