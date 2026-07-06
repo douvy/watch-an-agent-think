@@ -115,15 +115,6 @@ a {
   }
 }
 
-/* The thought-field — the table's texture. Not Zed's graph paper: the
-   mascot's own idiom, the thought dots that rise off his head, scattered
-   across the dark at a whisper. Hand-placed 180px tile, dots loosely
-   drifting up-right like the idle animation, two depths so it reads as
-   air, not a grid. */
-.thought-field {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%237b7e8a'%3E%3Crect x='12' y='146' width='2' height='2' fill-opacity='.085'/%3E%3Crect x='34' y='128' width='2' height='2' fill-opacity='.05'/%3E%3Crect x='58' y='106' width='2' height='2' fill-opacity='.08'/%3E%3Crect x='96' y='84' width='2' height='2' fill-opacity='.05'/%3E%3Crect x='124' y='58' width='2' height='2' fill-opacity='.085'/%3E%3Crect x='152' y='30' width='2' height='2' fill-opacity='.05'/%3E%3Crect x='76' y='22' width='2' height='2' fill-opacity='.07'/%3E%3Crect x='20' y='52' width='2' height='2' fill-opacity='.05'/%3E%3Crect x='142' y='132' width='2' height='2' fill-opacity='.07'/%3E%3Crect x='104' y='162' width='2' height='2' fill-opacity='.05'/%3E%3C/g%3E%3C/svg%3E");
-}
-
 /* House label style: tiny uppercase captions */
 .label {
   font-size: 10px;

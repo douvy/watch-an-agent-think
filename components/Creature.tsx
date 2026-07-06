@@ -122,6 +122,62 @@ export function CreatureTriumph({ size = 44 }: { size?: number }) {
   );
 }
 
+// The blueprint — the hero's centerpiece, Zed-style: one giant faint
+// hand drawing behind the text, not a tiled texture. It's the mascot's
+// own schematic on the drafting table — silhouette traced in outline on
+// his 16px grid, dashed construction guides extending off his key edges
+// (ear tips, shoulders, feet, body walls), eyes as faint mint fills. The
+// live sprite stands in front of his own drawing.
+export function CreatureBlueprint({ scale = 7 }: { scale?: number }) {
+  const INK = "#7b7e8a";
+  return (
+    <svg
+      width={30 * scale}
+      height={16 * scale}
+      viewBox="-7 -1.5 30 16"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      {/* construction guides — the stitch idiom, extended off the drawing */}
+      <g
+        stroke={INK}
+        strokeOpacity={0.1}
+        strokeDasharray="0.43 0.71"
+      >
+        <line x1={-7} y1={1} x2={23} y2={1} vectorEffect="non-scaling-stroke" />
+        <line x1={-7} y1={4} x2={23} y2={4} vectorEffect="non-scaling-stroke" />
+        <line x1={-7} y1={13} x2={23} y2={13} vectorEffect="non-scaling-stroke" />
+        <line x1={2} y1={-1.5} x2={2} y2={14.5} vectorEffect="non-scaling-stroke" />
+        <line x1={14} y1={-1.5} x2={14} y2={14.5} vectorEffect="non-scaling-stroke" />
+      </g>
+      {/* silhouette — one closed stepped outline, ears/arms/legs and all */}
+      <path
+        d="M3 1 H4 V2 H5 V3 H6 V4 H10 V3 H11 V2 H12 V1 H13 V4 H14 V6 H16 V9 H14 V13 H12 V12 H11 V13 H9 V12 H7 V13 H5 V12 H4 V13 H2 V9 H0 V6 H2 V4 H3 Z"
+        fill="none"
+        stroke={INK}
+        strokeOpacity={0.28}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* face patch */}
+      <rect
+        x={3}
+        y={5}
+        width={10}
+        height={4}
+        fill="none"
+        stroke={INK}
+        strokeOpacity={0.16}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* eyes — the only color on the sheet */}
+      <g fill={GREEN} fillOpacity={0.16}>
+        <rect x={5} y={6} width={2} height={2} />
+        <rect x={9} y={6} width={2} height={2} />
+      </g>
+    </svg>
+  );
+}
+
 export function Creature({
   state,
   ms,

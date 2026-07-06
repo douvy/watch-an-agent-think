@@ -1,3 +1,4 @@
+import { CreatureBlueprint } from "@/components/Creature";
 import { Player } from "@/components/Player";
 
 // The hero is live: the mascot and the plain-English narration line derive
@@ -11,12 +12,6 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-x-clip">
       <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col bg-[#111318]">
-        {/* the table's texture — the mascot's thought dots scattered
-            across the dark; see .thought-field in globals.css */}
-        <span
-          aria-hidden
-          className="thought-field pointer-events-none absolute inset-0"
-        />
         {/* the inner container's vertical walls — drawn as line elements
             (same pattern as the stitched rails) so nothing can eat them */}
         <span
@@ -66,6 +61,13 @@ export default function Home() {
           }}
         />
         <Player />
+        {/* the sheet's title-block drawing — the mascot's own schematic on
+            the empty stretch of table below the machine, where a real
+            drafting sheet carries its part drawing. Normal flow (flex-1
+            absorbs the free space), so it can never sit under text. */}
+        <div className="hidden flex-1 items-center justify-center py-4 md:flex">
+          <CreatureBlueprint scale={6} />
+        </div>
         <footer className="relative flex items-baseline justify-between px-5 py-4 md:px-10">
           {/* top rule runs full-bleed past the rails, matching the header —
               the page grid's horizontal lines cross its verticals */}

@@ -981,7 +981,7 @@ export function Player() {
             the banding does the sectioning so text doesn't have to */}
         {/* inset highlight on the top edge — the machined-metal glint dark
             windows use for depth; a drop shadow is invisible on pure black */}
-        <div className="relative flex items-stretch border-b border-border bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="relative flex items-stretch border-b border-border bg-[#3c414c] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {/* left section is exactly the plan column's width, so the title
               bar's dividers line up with the grid below — Zed's trick */}
           <div className="flex items-stretch bg-well md:w-[260px] md:border-r md:border-border">
@@ -1001,13 +1001,7 @@ export function Player() {
           <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-[10px] text-[#dcdfe3]">
             data/{scenario.id}.ts
           </span>
-          {/* right section mirrors the memory column below (200px, border-l),
-              so the window's vertical seams run top to bottom — Zed's frame
-              is one set of continuous lines, not per-row dividers */}
-          <div className="ml-auto flex items-center justify-end md:w-[200px] md:justify-between md:border-l md:border-border">
-            <span className="hidden px-3 font-mono text-[9px] tracking-[0.09em] text-[#4d525e] uppercase md:block">
-              read-only
-            </span>
+          <div className="ml-auto flex items-center justify-end">
             {/* the avatar is the agent itself — same face, same clock */}
             <div className="flex items-center px-2.5 py-1.5">
               <span
@@ -1456,11 +1450,11 @@ export function Player() {
         </div>
 
         {/* Status bar */}
-        <div className="flex items-center justify-between border-t border-border bg-surface px-3 py-1.5 font-mono text-[10px]">
+        <div className="flex items-center justify-between border-t border-border bg-[#3c414c] px-3 py-1.5 font-mono text-[10px] text-[#dde0e5]">
           <div className="flex items-center gap-3">
             <span
               className={`flex items-center gap-1.5 ${
-                yourCall && !playing ? "text-human" : "text-[#dcdfe3]"
+                yourCall && !playing ? "text-human" : "text-[#dde0e5]"
               }`}
             >
               <span
@@ -1486,7 +1480,7 @@ export function Player() {
             <span aria-hidden className="text-[#4d525e]">
               ·
             </span>
-            <span className="text-[#a9adb6]">
+            <span className="text-[#dde0e5]">
               run {String(idx + 1).padStart(2, "0")} /{" "}
               {String(scenarios.length).padStart(2, "0")}
             </span>
@@ -1517,17 +1511,17 @@ export function Player() {
               text, hairline dividers between groups */}
           <div className="hidden items-center gap-2.5 md:flex">
             <span className="flex items-center gap-1.5">
-              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dcdfe3]">
+              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dde0e5]">
                 ← →
               </kbd>
-              <span className="text-[#a9adb6]">scrub</span>
+              <span className="text-[#dde0e5]">scrub</span>
             </span>
             <span aria-hidden className="h-3 w-px bg-border" />
             <span className="flex items-center gap-1.5">
-              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dcdfe3]">
+              <kbd className="rounded-[2px] bg-hover-bg px-1.5 py-px text-[10px] text-[#dde0e5]">
                 1–3
               </kbd>
-              <span className="text-[#a9adb6]">runs</span>
+              <span className="text-[#dde0e5]">runs</span>
             </span>
           </div>
         </div>
