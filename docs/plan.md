@@ -34,7 +34,7 @@ static site, shipped at hour 10. Footer: "Design engineer. I make AI comprehensi
 - [x] Spring solver secured: `lib/spring.ts` + `lib/spring.test.ts`, 5/5 passing (`npm test`)
 - [x] Scaffold: copied zed-next-app, ported pokeport design tokens, stripped
       framer-motion / radix / cva / old components
-- [x] git init + initial commit, pushed: github.com/douvy/watch-an-agent-think
+- [x] git init + initial commit, pushed: github.com/douvy/how-agents-think
 - [x] Three scenario scripts drafted, reviewed by second model, five line-level
       edits applied, typed in `data/*.ts` (schema in `lib/timeline.ts`)
 - [x] Reference folder: 7 Zed screenshots in `reference/`, synthesis in

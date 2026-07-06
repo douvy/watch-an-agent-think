@@ -96,7 +96,7 @@ export default function Home() {
             style={{ right: "calc(-3rem - 3px)" }}
           />
           <a
-            href="https://github.com/douvy/watch-an-agent-think"
+            href="https://github.com/douvy/how-agents-think"
             target="_blank"
             rel="noopener noreferrer"
             className="w-fit font-mono text-[11px] text-muted underline decoration-white/20 underline-offset-2 hover:decoration-white"

@@ -25,7 +25,7 @@ const description =
   "Three agent runs on a scrubbable timeline — planning, tool calls, failure, recovery, context pressure. No model behind this page; every run is a script you can scrub.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://watch-an-agent-think.vercel.app"),
+  metadataBase: new URL("https://howagentsthink.com"),
   title: "Watch How an AI Agent Thinks",
   description,
   openGraph: {
