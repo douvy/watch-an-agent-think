@@ -190,6 +190,43 @@ export function Player() {
     () => activeEvents.filter((e) => e.at <= ms).length,
     [activeEvents, ms],
   );
+  // Dwell beats — thoughts and chapter lines park the clock while the
+  // reader reads (the playback effect below does the parking). Words set
+  // the wait, capped at 8s: fact 4 rides a ~44-word thought, and past
+  // eight seconds a parked clock reads as a hang, not a beat — the
+  // impatient reader the cap protects is exactly the one who won't
+  // press pause. Hoisted from the effect so the status bar can call the
+  // park what it is — "reading" — instead of a frozen "playing".
+  const dwells = useMemo(
+    () =>
+      scenario.events
+        .filter(
+          (e) =>
+            (e.type === "thought" ||
+              (e.narration &&
+                isChapterBeat(e) &&
+                e.type !== "choice" &&
+                e.type !== "done")) &&
+            eventActive(e, resolved),
+        )
+        .map((e) => {
+          const read = e.type === "thought" ? e.text : e.narration!;
+          return {
+            at: Math.min(e.at + HOLD_MS, scenario.durationMs),
+            wait: Math.min(
+              8000,
+              Math.max(
+                1200,
+                400 + read.split(/\s+/).filter((w) => /\w/.test(w)).length * 300,
+              ),
+            ),
+          };
+        }),
+    [scenario, resolved],
+  );
+  // Parked on a dwell right now: ms only ever lands exactly on a dwell's
+  // settle point via the park itself, so equality is the whole test.
+  const reading = playing && dwells.some((d) => d.at === ms);
   // The stream under rewrite: a union of the outgoing future (exit delays
   // bottom-up — the timeline unravels back toward the choice) and the
   // incoming one (enter delays top-down), interleaved by timestamp so each
@@ -346,9 +383,10 @@ export function Player() {
   // parks at at + HOLD_MS, and only then does the new line enter — the
   // sole moving thing on a frozen screen (narrationOf takes effect at the
   // settle point; its entrance is wall-clock CSS). The park lasts the
-  // entrance plus the reading (400 + words × 300ms). Wall-clock only —
-  // scrubbing never dwells, and ms-purity is untouched. Choices park via
-  // gates; done ends the clock, so neither dwells.
+  // entrance plus the reading (400 + words × 300ms, capped at 8s — see
+  // the dwells memo). Wall-clock only — scrubbing never dwells, and
+  // ms-purity is untouched. Choices park via gates; done ends the clock,
+  // so neither dwells.
   //
   // Thoughts dwell too, on their own text. They never reach the marquee,
   // so without the park a forty-word thought (fact 4 rides one) gets two
@@ -359,27 +397,6 @@ export function Player() {
     const gates = scenario.events
       .filter((e) => e.type === "choice" && !(e.choiceId in choices))
       .map((e) => Math.min(e.at + HOLD_MS, scenario.durationMs));
-    const resolved = resolveChoices(scenario, choices);
-    const dwells = scenario.events
-      .filter(
-        (e) =>
-          (e.type === "thought" ||
-            (e.narration &&
-              isChapterBeat(e) &&
-              e.type !== "choice" &&
-              e.type !== "done")) &&
-          eventActive(e, resolved),
-      )
-      .map((e) => {
-        const read = e.type === "thought" ? e.text : e.narration!;
-        return {
-          at: Math.min(e.at + HOLD_MS, scenario.durationMs),
-          wait: Math.max(
-            1200,
-            400 + read.split(/\s+/).filter((w) => /\w/.test(w)).length * 300,
-          ),
-        };
-      });
     let dwellUntil = 0;
     let raf = 0;
     let last = performance.now();
@@ -415,7 +432,7 @@ export function Player() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, scenario, choices]);
+  }, [playing, scenario, choices, dwells]);
 
   // Rewrite clock — a short wall-clock rAF that drives the unravel/cascade,
   // then hands back to the pure state and unmounts itself.
@@ -1256,7 +1273,10 @@ export function Player() {
                     : yourCall && !playing
                       ? "bg-human"
                       : playing
-                        ? "bg-accent"
+                        ? // the pulse is the tell that a parked clock is a
+                          // beat, not a hang — wall-clock CSS, like
+                          // narrate-enter, because the park freezes ms
+                          `bg-accent${reading ? " motion-safe:animate-pulse" : ""}`
                         : "bg-[#636a76]"
                 }`}
               />
@@ -1265,7 +1285,9 @@ export function Player() {
                 : yourCall && !playing
                   ? "your call"
                   : playing
-                    ? "playing"
+                    ? reading
+                      ? "reading"
+                      : "playing"
                     : "paused"}
             </span>
             <span aria-hidden className="text-[#4d525e]">
