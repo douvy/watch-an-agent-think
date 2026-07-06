@@ -11,6 +11,12 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-x-clip">
       <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col bg-[#111318]">
+        {/* the table's texture — the mascot's thought dots scattered
+            across the dark; see .thought-field in globals.css */}
+        <span
+          aria-hidden
+          className="thought-field pointer-events-none absolute inset-0"
+        />
         {/* the inner container's vertical walls — drawn as line elements
             (same pattern as the stitched rails) so nothing can eat them */}
         <span
