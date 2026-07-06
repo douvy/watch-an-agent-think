@@ -85,7 +85,7 @@ function chaptersOf(
 // it, so quiet beats stay quiet and the marquee keeps a reading rhythm
 // (enforced by the legibility test in lib/timeline.test.ts). Derived from
 // the last narrated event, so scrubbing rewrites it like captions.
-const INTRO_NARRATION = "I'm an agent. Press play and watch me work.";
+const INTRO_NARRATION = "I'm an agent. Press play and watch me think.";
 
 function narrationOf(
   scenario: Scenario,
