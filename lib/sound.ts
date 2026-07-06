@@ -104,3 +104,15 @@ export function chirp(kind: Chirp) {
       break;
   }
 }
+
+// The scrubber's ratchet — a soft click each time a drag crosses an event
+// tick. Quieter and shorter than the chirps so it reads as texture under
+// your finger, not the mascot's voice, and direction-aware: the ladder
+// climbs while you scrub forward, descends when you drag back.
+let ratchetIdx = 2;
+
+export function ratchet(dir: 1 | -1) {
+  unlock(); // a scrub is a real gesture — free iOS unlock
+  ratchetIdx = Math.max(0, Math.min(SCALE.length - 1, ratchetIdx + dir));
+  blip(SCALE[ratchetIdx], 0, 0.035, 0.02);
+}

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { scenarios } from "@/data";
 import { Creature, CreatureTriumph } from "@/components/Creature";
-import { chirp, unlock } from "@/lib/sound";
+import { chirp, ratchet, unlock } from "@/lib/sound";
 import { createSpring, presets } from "@/lib/spring";
 import {
   stateAt,
@@ -552,6 +552,12 @@ export function Player() {
   // button, tab select, the toggle), which is what iOS Safari requires.
   // Toggle lives in the status bar.
   const [sound, setSound] = useState(true);
+  // Where the last ratchet comparison ended — a ref, not closure ms, so
+  // several pointermoves inside one frame can't re-cross the same tick.
+  const scrubRef = useRef(0);
+  useEffect(() => {
+    scrubRef.current = ms;
+  }, [ms]);
   // Which runs this reader has seen through to done — session memory for
   // the tab ticks, so the trilogy reads as collectible. Meta-state like the
   // sound toggle, deliberately outside the pure (ms, choices) world.
@@ -1359,9 +1365,22 @@ export function Player() {
             duration={scenario.durationMs}
             ticks={activeEvents.map((e) => e.at)}
             onScrub={(m) => {
+              const next = Math.min(m, maxMs);
+              // the ratchet: one soft click when this move crosses event
+              // ticks (collapsed — a fast fling is one click, not a chord),
+              // pitch stepping up scrubbing forward, down dragging back.
+              // Scrub-only by construction: playback never lands here.
+              const prev = scrubRef.current;
+              if (sound && next !== prev) {
+                const lo = Math.min(prev, next);
+                const hi = Math.max(prev, next);
+                if (activeEvents.some((e) => e.at > lo && e.at <= hi))
+                  ratchet(next > prev ? 1 : -1);
+              }
+              scrubRef.current = next;
               setRewrite(null);
               setPlaying(false);
-              setMs(Math.min(m, maxMs));
+              setMs(next);
             }}
           />
           {/* current time bright, total dim — the number that moves leads */}
