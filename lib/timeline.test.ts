@@ -4,6 +4,11 @@ import { stateAt, eventActive, resolveChoices } from "./timeline.ts";
 import { loop } from "../data/loop.ts";
 import { recovery } from "../data/recovery.ts";
 import { pressure } from "../data/pressure.ts";
+import { fridge } from "../data/fridge.ts";
+import { productive } from "../data/productive.ts";
+import { apartments } from "../data/apartments.ts";
+
+const all = [loop, recovery, pressure, fridge, productive, apartments];
 
 test("t=0: plan visible, nothing else", () => {
   const s = stateAt(loop, 0);
@@ -14,7 +19,7 @@ test("t=0: plan visible, nothing else", () => {
 });
 
 test("mid-run: tool call resolves, steps progress", () => {
-  const s = stateAt(loop, 13500);
+  const s = stateAt(loop, 18900);
   const t2 = s.blocks.find((b) => b.kind === "tool" && b.id === "t2");
   assert.ok(t2 && t2.kind === "tool" && !t2.pending && t2.ok);
   assert.equal(s.plans[0].status[0], "done");
@@ -22,19 +27,19 @@ test("mid-run: tool call resolves, steps progress", () => {
 });
 
 test("pending tool call before its result arrives", () => {
-  const s = stateAt(loop, 5000); // t1 called at 4000, result at 6500
+  const s = stateAt(loop, 7000); // t1 called at 5600, result at 9100
   const t1 = s.blocks.find((b) => b.kind === "tool" && b.id === "t1");
   assert.ok(t1 && t1.kind === "tool" && t1.pending);
 });
 
 test("recovery: plan A dies, plan B replaces it", () => {
-  const before = stateAt(recovery, 28000);
+  const before = stateAt(recovery, 39000);
   assert.equal(before.plans.length, 1);
   assert.equal(before.plans[0].deadAt, undefined);
 
-  const after = stateAt(recovery, 32500);
+  const after = stateAt(recovery, 45500);
   assert.equal(after.plans.length, 2);
-  assert.equal(after.plans[0].deadAt, 29000);
+  assert.equal(after.plans[0].deadAt, 40600);
   assert.equal(after.plans[0].deadReason, "built on a misread symptom");
   assert.equal(after.plans[1].deadAt, undefined);
 });
@@ -46,7 +51,7 @@ test("recovery: ends done with verdict", () => {
 });
 
 test("pressure: compaction absorbs prior blocks and drops tokens", () => {
-  const before = stateAt(pressure, 33500);
+  const before = stateAt(pressure, 46500);
   assert.equal(before.tokens, 6900);
   assert.ok(
     before.blocks.every(
@@ -55,7 +60,7 @@ test("pressure: compaction absorbs prior blocks and drops tokens", () => {
     ),
   );
 
-  const after = stateAt(pressure, 35500);
+  const after = stateAt(pressure, 48500);
   assert.equal(after.tokens, 1900);
   assert.equal(after.tokensPrev, 6900);
   const compactBlock = after.blocks.find((b) => b.kind === "compact");
@@ -68,9 +73,9 @@ test("pressure: compaction absorbs prior blocks and drops tokens", () => {
 });
 
 test("scrubbing backward is free: same ms, same state", () => {
-  const a = JSON.stringify(stateAt(recovery, 31000));
+  const a = JSON.stringify(stateAt(recovery, 43000));
   stateAt(recovery, recovery.durationMs); // jump to end
-  const b = JSON.stringify(stateAt(recovery, 31000)); // jump back
+  const b = JSON.stringify(stateAt(recovery, 43000)); // jump back
   assert.equal(a, b);
 });
 
@@ -87,7 +92,7 @@ test("picking the other branch fires its beats — and rejoins the spine", () =>
   assert.ok(t10 && t10.kind === "tool" && !t10.pending && t10.ok);
   // both paths end at the identical verdict
   assert.equal(s.done, "recovery means distrusting your plan");
-  assert.equal(s.plans[0].deadAt, 29000);
+  assert.equal(s.plans[0].deadAt, 40600);
 });
 
 test("loop: the offbyone branch swaps the evidence end-to-end", () => {
@@ -110,12 +115,12 @@ test("loop: the offbyone branch swaps the evidence end-to-end", () => {
 });
 
 test("choice block is pending until the reader answers", () => {
-  const live = stateAt(recovery, 22000);
+  const live = stateAt(recovery, 30800);
   const q = live.blocks.find((b) => b.kind === "choice");
   assert.ok(q && q.kind === "choice");
   assert.equal(q.picked, undefined);
 
-  const answered = stateAt(recovery, 22000, { "recovery-pivot": "logs" });
+  const answered = stateAt(recovery, 30800, { "recovery-pivot": "logs" });
   const qa = answered.blocks.find((b) => b.kind === "choice");
   assert.ok(qa && qa.kind === "choice");
   assert.equal(qa.picked, "logs");
@@ -131,15 +136,15 @@ test("pressure keep path: the overflow fails, then both paths compact", () => {
 
 test("choices are pure: same (ms, choices), same state", () => {
   const pick = { "pressure-memory": "keep" };
-  const a = JSON.stringify(stateAt(pressure, 40000, pick));
+  const a = JSON.stringify(stateAt(pressure, 56000, pick));
   stateAt(pressure, pressure.durationMs); // default path, end
-  stateAt(pressure, 5000, pick); // early
-  const b = JSON.stringify(stateAt(pressure, 40000, pick));
+  stateAt(pressure, 7000, pick); // early
+  const b = JSON.stringify(stateAt(pressure, 56000, pick));
   assert.equal(a, b);
 });
 
 test("tokens never exceed context budget in any script", () => {
-  for (const sc of [loop, recovery, pressure]) {
+  for (const sc of all) {
     for (const e of sc.events) {
       assert.ok(e.tokensAfter <= 8000, `${sc.id} at ${e.at}: ${e.tokensAfter}`);
     }
@@ -147,7 +152,7 @@ test("tokens never exceed context budget in any script", () => {
 });
 
 test("event timestamps are monotonic and within duration", () => {
-  for (const sc of [loop, recovery, pressure]) {
+  for (const sc of all) {
     let prev = -1;
     for (const e of sc.events) {
       assert.ok(e.at >= prev, `${sc.id}: ${e.at} after ${prev}`);
@@ -164,12 +169,15 @@ test("event timestamps are monotonic and within duration", () => {
 test("every narration line lives long enough to read", () => {
   const MS_PER_WORD = 240;
   const words = (s: string) => s.split(/\s+/).filter((w) => /\w/.test(w)).length;
-  for (const sc of [loop, recovery, pressure]) {
+  for (const sc of all) {
     const gates = sc.events.filter((e) => e.type === "choice");
-    // one path per option — each covers the full spine plus one branch
-    const paths = gates.flatMap((g) =>
-      g.type === "choice" ? g.options.map((o) => ({ [g.choiceId]: o.id })) : [],
-    );
+    // one path per option — each covers the full spine plus one branch.
+    // Gate-less scripts (the everyday track) still get their one path.
+    const paths = gates.length
+      ? gates.flatMap((g) =>
+          g.type === "choice" ? g.options.map((o) => ({ [g.choiceId]: o.id })) : [],
+        )
+      : [{} as Record<string, string>];
     for (const picks of paths) {
       const resolved = resolveChoices(sc, picks);
       const lines = sc.events.filter((e) => e.narration && eventActive(e, resolved));
@@ -186,8 +194,31 @@ test("every narration line lives long enough to read", () => {
   }
 });
 
+// The everyday track's contract: one gate per run, same verdicts as its
+// code twin — the lesson is the constant, only the material changes, and
+// both answers to the gate land on the same verdict.
+test("everyday runs mirror their code twins: one gate, same verdicts", () => {
+  const twins = [
+    [fridge, loop],
+    [productive, recovery],
+    [apartments, pressure],
+  ] as const;
+  for (const [everyday, code] of twins) {
+    assert.equal(everyday.events.filter((e) => e.type === "choice").length, 1);
+    assert.equal(everyday.lesson, code.lesson);
+    const s = stateAt(everyday, everyday.durationMs);
+    assert.equal(s.done, everyday.lesson);
+    const q = everyday.events.find((e) => e.type === "choice");
+    assert.ok(q && q.type === "choice");
+    const alt = stateAt(everyday, everyday.durationMs, {
+      [q.choiceId]: q.options[1].id,
+    });
+    assert.equal(alt.done, everyday.lesson);
+  }
+});
+
 test("every branch tag names a real choice and option", () => {
-  for (const sc of [loop, recovery, pressure]) {
+  for (const sc of all) {
     for (const e of sc.events) {
       if (!e.branch) continue;
       const q = sc.events.find(

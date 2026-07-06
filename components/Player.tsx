@@ -8,6 +8,7 @@ import {
   Search,
   Archive,
   Check,
+  MessageCircle,
   Play,
   Pause,
   RotateCcw,
@@ -15,7 +16,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { scenarios } from "@/data";
+import { scenarioSets, type Mode } from "@/data";
 import { Creature, CreatureTriumph } from "@/components/Creature";
 import { chirp, ratchet, unlock } from "@/lib/sound";
 import { createSpring, presets } from "@/lib/spring";
@@ -80,6 +81,15 @@ function chaptersOf(
   return out;
 }
 
+// The active chapter's number speaks the beat's own color — the same
+// palette the tab dots and mascot already teach. Quiet beats stay mint.
+const CHAPTER_TONES: Record<string, string> = {
+  setback: "text-accent-negative",
+  "plan dies": "text-accent-negative",
+  compact: "text-warning",
+  decision: "text-human",
+};
+
 // Narration — the storyteller track, in the mascot's first-person voice.
 // Only hand-written lines speak: a line persists until the author replaces
 // it, so quiet beats stay quiet and the marquee keeps a reading rhythm
@@ -105,6 +115,10 @@ const TOOL_ICONS: Record<string, typeof Terminal> = {
   read: FileText,
   edit: Pencil,
   grep: Search,
+  // the everyday track's verbs — same anatomy, no code in sight
+  look: Search,
+  do: Pencil,
+  ask: MessageCircle,
 };
 
 // All motion below is a pure function of (ms - eventTimestamp) through the
@@ -533,6 +547,16 @@ function Scrubber({
 }
 
 export function Player() {
+  // Two tracks, one machine: `mode` swaps which trilogy the tabs hold.
+  // Everyday is the default — the broadest audience lands soft; coders
+  // are one click away. Precedence at load is URL > stored > default
+  // (see the mount effect); the toggle writes the preference. Everything
+  // downstream — tabs, deep links, watched stamps — reads the current set.
+  const [mode, setMode] = useState<Mode>("everyday");
+  // First-visit invitation on the toggle — cleared the moment the reader
+  // uses it (which also stores their preference, so it never re-appears).
+  const [modeHint, setModeHint] = useState(false);
+  const scenarios = scenarioSets[mode];
   const [idx, setIdx] = useState(0);
   const [ms, setMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -561,9 +585,11 @@ export function Player() {
   // Which runs this reader has seen through to done — session memory for
   // the tab ticks, so the trilogy reads as collectible. Meta-state like the
   // sound toggle, deliberately outside the pure (ms, choices) world.
-  const [watched, setWatched] = useState<number[]>([]);
-  // The set is complete — the ticks' promised payoff.
-  const trilogy = watched.length === scenarios.length;
+  // Keyed by scenario id, not index — progress survives a mode flip and
+  // the two tracks never collide.
+  const [watched, setWatched] = useState<string[]>([]);
+  // The current set is complete — the ticks' promised payoff.
+  const trilogy = scenarios.every((sc) => watched.includes(sc.id));
   const scenario = scenarios[idx];
   const resolved = useMemo(() => resolveChoices(scenario, choices), [scenario, choices]);
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
@@ -680,21 +706,37 @@ export function Player() {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
+    // Mode precedence: URL > stored preference > default everyday. A
+    // shared ?mode=code link must land in code even for a reader whose
+    // own preference is everyday.
+    const um = p.get("mode");
+    const stored = localStorage.getItem("watm-mode");
+    const m: Mode =
+      um === "everyday" || um === "code"
+        ? um
+        : stored === "everyday" || stored === "code"
+          ? stored
+          : "everyday";
+    if (m !== "everyday") setMode(m);
+    // no preference on record — the toggle wears its invitation
+    if (m === "everyday" && !stored) setModeHint(true);
+    const set = scenarioSets[m];
     const s = Number(p.get("s"));
-    const si = s >= 1 && s <= scenarios.length ? s - 1 : 0;
+    const si = s >= 1 && s <= set.length ? s - 1 : 0;
     if (si) setIdx(si);
     const t = Number(p.get("t"));
     if (t > 0) {
-      const firstChoice = scenarios[si].events.find((e) => e.type === "choice");
-      const cap = firstChoice ? firstChoice.at + HOLD_MS : scenarios[si].durationMs;
-      setMs(Math.min(t * 1000, scenarios[si].durationMs, cap));
+      const firstChoice = set[si].events.find((e) => e.type === "choice");
+      const cap = firstChoice ? firstChoice.at + HOLD_MS : set[si].durationMs;
+      setMs(Math.min(t * 1000, set[si].durationMs, cap));
     }
   }, []);
 
   // A run counts as watched once its verdict is on screen.
   useEffect(() => {
-    if (state.done) setWatched((w) => (w.includes(idx) ? w : [...w, idx]));
-  }, [state.done, idx]);
+    if (state.done)
+      setWatched((w) => (w.includes(scenario.id) ? w : [...w, scenario.id]));
+  }, [state.done, scenario.id]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Deep link out: while paused, the URL captures the frame you're looking at.
@@ -702,14 +744,14 @@ export function Player() {
   useEffect(() => {
     if (playing) return;
     const timer = setTimeout(() => {
-      const url =
-        ms > 0
-          ? `?s=${idx + 1}&t=${(ms / 1000).toFixed(1)}`
-          : window.location.pathname;
+      const parts: string[] = [];
+      if (mode === "code") parts.push("mode=code");
+      if (ms > 0) parts.push(`s=${idx + 1}`, `t=${(ms / 1000).toFixed(1)}`);
+      const url = parts.length ? `?${parts.join("&")}` : window.location.pathname;
       history.replaceState(null, "", url);
     }, 300);
     return () => clearTimeout(timer);
-  }, [playing, ms, idx]);
+  }, [playing, ms, idx, mode]);
 
   // Playback clock — rAF advances ms; everything else derives from it.
   // Unanswered choices are gates: the clock parks at at + HOLD_MS (the
@@ -794,32 +836,62 @@ export function Player() {
                   // `watched` here is still the pre-completion set: setWatched
                   // lands next render, where the lastEventIndex guard above
                   // keeps this from chirping twice.
-                  watched.length === scenarios.length - 1 && !watched.includes(idx)
+                  scenarios.filter((sc) => watched.includes(sc.id)).length ===
+                      scenarios.length - 1 && !watched.includes(scenario.id)
                   ? "fanfare"
                   : "done"
                 : "move",
     );
-  }, [state.lastEventIndex, sound, playing, scenario, watched, idx]);
+  }, [state.lastEventIndex, sound, playing, scenario, scenarios, watched]);
 
   // Per-run session memory — editor-tab semantics: switching away parks a
   // run where you left it (position and picks); coming back restores it
   // paused instead of restarting. Only unvisited runs start fresh and play.
   // Replay is one click if you want the top. A ref, not state: it's only
-  // read at switch time.
-  const parkedRef = useRef<Record<number, { ms: number; choices: Choices }>>({});
+  // read at switch time. Keyed by scenario id so both tracks share it.
+  const parkedRef = useRef<Record<string, { ms: number; choices: Choices }>>({});
   const select = useCallback(
-    (i: number) => {
+    (i: number, play = false) => {
       if (i === idx) return;
-      if (sound) unlock(); // unvisited runs autoplay — this tap is the gesture
+      if (sound) unlock(); // this tap is the audio-unlock gesture
       setRewrite(null);
-      parkedRef.current[idx] = { ms, choices };
-      const parked = parkedRef.current[i];
+      parkedRef.current[scenario.id] = { ms, choices };
+      const parked = parkedRef.current[scenarios[i].id];
       setIdx(i);
       setMs(parked?.ms ?? 0);
       setChoices(parked?.choices ?? {});
-      setPlaying(!parked);
+      // a tab picks an episode, not play: fresh runs inherit your play
+      // state (pre-play stays at the door), parked runs restore paused —
+      // but the end-card's `play` is an explicit "roll the next one".
+      setPlaying(play || (parked ? false : playing));
     },
-    [idx, ms, choices, sound],
+    [idx, scenario.id, scenarios, ms, choices, sound, playing],
+  );
+
+  // The mode flip — same editor-tab semantics as select(), across sets:
+  // park the current run, land on the other track's first tab, restore it
+  // paused if visited, inherit the play state if fresh. Using the toggle
+  // stores the preference and retires the first-visit hint.
+  const switchMode = useCallback(
+    (m: Mode) => {
+      if (m === mode) return;
+      if (sound) unlock();
+      setRewrite(null);
+      localStorage.setItem("watm-mode", m);
+      setModeHint(false);
+      parkedRef.current[scenario.id] = { ms, choices };
+      const first = scenarioSets[m][0];
+      const parked = parkedRef.current[first.id];
+      setMode(m);
+      setIdx(0);
+      setMs(parked?.ms ?? 0);
+      setChoices(parked?.choices ?? {});
+      // the toggle picks a language, not play: a fresh track inherits your
+      // play state (mid-play keeps momentum, pre-play stays at the door);
+      // a parked track always restores paused for inspection.
+      setPlaying(parked ? false : playing);
+    },
+    [mode, scenario.id, ms, choices, sound, playing],
   );
 
   // Keyboard: ←/→ scrub ±2s, space toggles play, 1-3 pick a run.
@@ -853,7 +925,7 @@ export function Player() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [ms, playing, blocked, maxMs, scenario.durationMs, select]);
+  }, [ms, playing, blocked, maxMs, scenario.durationMs, scenarios.length, select]);
 
   // Chat-style follow: the stream tracks the newest block while the reader
   // sits pinned near the bottom — playing, scrubbing, or mid-rewrite alike —
@@ -1052,7 +1124,7 @@ export function Player() {
                   being completed it springs in with an overshoot pop while
                   a mint wash crosses the tab and fades. Pure f(ms): the
                   ceremony replays on every landing, un-happens on scrub. */}
-              {watched.includes(i) && (
+              {watched.includes(sc.id) && (
                 <span
                   className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[3px] border border-accent/40 bg-accent/15 text-accent"
                   style={{
@@ -1079,6 +1151,33 @@ export function Player() {
             </button>
           ))}
           <div aria-hidden className="flex-1 border-b border-border" />
+          {/* Track toggle — everyday is the front door, code is the real
+              material one click away. Rides the tab rail's empty rail; on a
+              first visit with no stored preference it wears a small
+              invitation so devs know the real thing is here. */}
+          <div className="flex items-center gap-2 border-b border-border pr-2 pl-3">
+            {modeHint && mode === "everyday" && (
+              <span className="hidden font-mono text-[10px] text-human sm:block">
+                coder? →
+              </span>
+            )}
+            <div className="flex items-center gap-px rounded-sm border border-border bg-well p-px font-mono text-[10px]">
+              {(["everyday", "code"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  aria-pressed={mode === m}
+                  className={`rounded-[2px] px-2 py-1 transition-colors ${
+                    mode === m
+                      ? "bg-hover-bg text-header-text"
+                      : "text-[#636a76] hover:text-muted"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Task bar — the human rendered as a Zed collaborator: their
@@ -1217,7 +1316,7 @@ export function Player() {
                   lift are pressable, bars are the agent speaking */}
               {state.done && !trilogy && idx < scenarios.length - 1 && (
                 <button
-                  onClick={() => select(idx + 1)}
+                  onClick={() => select(idx + 1, true)}
                   style={enterStyle(ms, state.lastEventAt + 600)}
                   className="flex w-full items-center justify-between rounded-sm border border-[#565b66] bg-hover-bg px-3 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:border-accent/60 hover:bg-[#3e434e]"
                 >
@@ -1437,13 +1536,10 @@ export function Player() {
                       : "cursor-default text-[#3f434d]"
                 }`}
               >
-                <span className={active ? "text-accent" : ""}>
+                <span className={active ? (CHAPTER_TONES[ch.label] ?? "text-accent") : ""}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 {ch.label}
-                {active && (
-                  <span className="text-[#636a76]">@{(ch.at / 1000).toFixed(1)}s</span>
-                )}
               </button>
             );
           })}
