@@ -1,0 +1,25 @@
+# Every push proves the site still works: lint, unit tests (the pure
+# timeline solver + script invariants), a production build, and a real-
+# browser smoke run (scripts/smoke.mjs) that catches hydration failures
+# the unit tests can't see. Chrome is preinstalled on ubuntu runners,
+# which is all playwright-core's channel:"chrome" needs.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run smoke
