@@ -87,10 +87,33 @@ a {
   touch-action: manipulation;
 }
 
-/* The finale sprite's sparkles — the one CSS animation in the app. The
-   trilogy card only exists while the clock is parked at an end frame,
-   where f(ms) motion would freeze; steps() keeps the discrete pixel-frame
-   feel with no easing, so the house rule bends without breaking. */
+/* The storyteller's entrance — the marquee line changes only while the
+   clock is parked (chapter dwells, gates), where f(ms) motion would
+   freeze mid-fade. Wall-clock CSS is the same sanctioned bend as the
+   twinkle below: motion that exists precisely because time is stopped. */
+@keyframes narrate-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.narrate-enter {
+  animation: narrate-enter 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .narrate-enter {
+    animation: none;
+  }
+}
+
+/* The finale sprite's sparkles — the trilogy card only exists while the
+   clock is parked at an end frame, where f(ms) motion would freeze;
+   steps() keeps the discrete pixel-frame feel with no easing, so the
+   house rule bends without breaking. */
 @keyframes twinkle {
   0%,
   55% {

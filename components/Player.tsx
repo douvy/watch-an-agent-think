@@ -49,6 +49,11 @@ function runDot(scenario: Scenario): string {
 // replays run free.
 const HOLD_MS = 800;
 
+// The done card staggers its verdict and takeaway in over ~2s; the closing
+// narration waits for the card to finish, so even the last read is a
+// sequential handoff — card settles, then the header speaks.
+const DONE_SETTLE_MS = 2200;
+
 // Branch-rewrite choreography (wall-clock, one-shot): flipping an answered
 // choice while paused doesn't blink the new future in — the old one
 // unravels bottom-up back toward the choice, the new one cascades top-down,
@@ -92,24 +97,31 @@ const CHAPTER_TONES: Record<string, string> = {
 };
 
 // Narration — the documentary voiceover, in the mascot's first-person
-// voice. It speaks only at chapter turns (the same beats that advance the
-// chapter strip), which are exactly the moments the transcript is quiet —
-// so the reader is never asked to read two places at once. A line persists
-// until the next chapter replaces it; everything between chapters speaks
-// as face-captions inside the transcript. Derived from the last narrated
-// chapter beat, so scrubbing rewrites it like captions.
+// voice. It speaks only at chapter turns, and only at the beat's settle
+// point (at + HOLD_MS) — after the transcript block has landed and gone
+// still, which is exactly when the dwell parks the clock. The strict
+// handoff: the terminal moves, then freezes, then the header speaks into
+// the silence. At no instant are both surfaces changing — the reader is
+// never asked to read two places at once. A line persists until the next
+// chapter replaces it; everything between chapters speaks as
+// face-captions inside the transcript. Pure f(ms), so scrubbing rewrites
+// it like captions.
 const INTRO_NARRATION = "I'm an agent. Press play and watch me think.";
 
 function narrationOf(
   scenario: Scenario,
-  lastEventIndex: number,
+  ms: number,
   resolved: Choices,
 ): { at: number; text: string } {
   let out = { at: 0, text: INTRO_NARRATION };
-  for (let i = 0; i <= lastEventIndex; i++) {
-    const e = scenario.events[i];
+  for (const e of scenario.events) {
+    const settleAt = Math.min(
+      e.at + (e.type === "done" ? DONE_SETTLE_MS : HOLD_MS),
+      scenario.durationMs,
+    );
+    if (settleAt > ms) break;
     if (e.narration && isChapterBeat(e) && eventActive(e, resolved))
-      out = { at: e.at, text: e.narration };
+      out = { at: settleAt, text: e.narration };
   }
   return out;
 }
@@ -632,8 +644,8 @@ export function Player() {
   const state = useMemo(() => stateAt(scenario, ms, choices), [scenario, ms, choices]);
   const chapters = useMemo(() => chaptersOf(scenario, resolved), [scenario, resolved]);
   const narration = useMemo(
-    () => narrationOf(scenario, state.lastEventIndex, resolved),
-    [scenario, state.lastEventIndex, resolved],
+    () => narrationOf(scenario, ms, resolved),
+    [scenario, ms, resolved],
   );
   // Only the reader's path exists on the strip and in the counters — the
   // other branch's events don't tick, don't count.
@@ -795,12 +807,15 @@ export function Player() {
   // beat's settle point) and waits. Answering removes the gate, so the
   // effect re-arms with one fewer stop.
   //
-  // Chapter dwells — motion always wins the eye, so when the narrator
-  // speaks, the world holds still: crossing a narrated chapter turn, the
-  // clock runs to the beat's settle point (at + HOLD_MS) and then parks
-  // for as long as the line takes to read (words × 300ms). Wall-clock
-  // only — scrubbing never dwells, and ms-purity is untouched. Choices
-  // park via gates; done ends the clock, so neither dwells.
+  // Chapter dwells — motion always wins the eye, so exactly one text
+  // surface may change at any instant. The handoff: the transcript block
+  // lands and settles (header still shows the previous line), the clock
+  // parks at at + HOLD_MS, and only then does the new line enter — the
+  // sole moving thing on a frozen screen (narrationOf takes effect at the
+  // settle point; its entrance is wall-clock CSS). The park lasts the
+  // entrance plus the reading (400 + words × 300ms). Wall-clock only —
+  // scrubbing never dwells, and ms-purity is untouched. Choices park via
+  // gates; done ends the clock, so neither dwells.
   useEffect(() => {
     if (!playing) return;
     const gates = scenario.events
@@ -820,7 +835,7 @@ export function Player() {
         at: Math.min(e.at + HOLD_MS, scenario.durationMs),
         wait: Math.max(
           1200,
-          e.narration!.split(/\s+/).filter((w) => /\w/.test(w)).length * 300,
+          400 + e.narration!.split(/\s+/).filter((w) => /\w/.test(w)).length * 300,
         ),
       }));
     let dwellUntil = 0;
@@ -1093,17 +1108,14 @@ export function Player() {
               line wraps differently each beat */}
           {/* the marquee speaks mint in the agent's voice; when the question
               is the reader's, it speaks the human's cream */}
+          {/* keyed on the text: the entrance is wall-clock CSS (see
+              globals.css) because the line only ever changes while the
+              clock is parked — f(ms) motion would freeze mid-fade */}
           <p
-            className={`min-h-[2.6em] flex-1 text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:text-[24px] ${
+            key={shownNarration.text}
+            className={`narrate-enter min-h-[2.6em] flex-1 text-center font-serif text-[17px] leading-snug md:min-h-[1.3em] md:text-[24px] ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
-            style={
-              rewrite
-                ? enterStyle(rewriteT, REWRITE.enterAt)
-                : shownNarration.at > 0
-                  ? enterStyle(ms, shownNarration.at)
-                  : undefined
-            }
           >
             {shownNarration.text}
           </p>
@@ -1300,16 +1312,10 @@ export function Player() {
               wrap; flex items-center keeps one-liners vertically centered
               inside that reserved box */}
           <p
-            className={`flex min-h-[2.5em] flex-1 items-center font-serif text-[14px] leading-tight ${
+            key={shownNarration.text}
+            className={`narrate-enter flex min-h-[2.5em] flex-1 items-center font-serif text-[14px] leading-tight ${
               yourCall ? "text-human" : "text-accent-light"
             }`}
-            style={
-              rewrite
-                ? enterStyle(rewriteT, REWRITE.enterAt)
-                : shownNarration.at > 0
-                  ? enterStyle(ms, shownNarration.at)
-                  : undefined
-            }
           >
             {shownNarration.text}
           </p>
