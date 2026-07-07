@@ -680,8 +680,11 @@ export function Player() {
         />
         {/* Masthead — serif italic, sentence case, natural tracking: an
             invitation in the storyteller's voice, Zed-headline style. The
-            marquee below is still the biggest type; the brand stays quiet. */}
-        <h1 className="text-center font-serif text-[18px] text-[#a9adb6] italic md:text-[20px]">
+            marquee below is still the biggest type; the brand stays quiet.
+            Desktop only: on phones it and the syllabus line say the same
+            thing twice, and the height comes out of the window. Hidden,
+            not removed — the h1 stays in the DOM for the crawler. */}
+        <h1 className="hidden text-center font-serif text-[20px] text-[#a9adb6] italic md:block">
           Watch how an AI agent thinks
         </h1>
         {/* Syllabus line — the one static string on the page: names what
@@ -691,7 +694,7 @@ export function Player() {
             wearing the same check the finale receipt pays off: the
             promise at the door, the receipt on the way out. */}
         <p className="mx-auto mt-1.5 flex max-w-lg flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[15px] tracking-tight text-muted md:max-w-none">
-          Three things to know about AI agents:
+          3 things to know about AI agents:
           {["how they work", "how they recover", "why they forget"].map(
             (t) => (
               <span
