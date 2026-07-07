@@ -6,9 +6,10 @@ a terminal-style window with a plan, tool calls, a memory gauge, and inner
 thoughts, all on a timeline you can scrub like a video. It is live at
 [howagentsthink.com](https://howagentsthink.com).
 
-**Project status: Done, being polished.** All three runs, the choice
-branches, and the finale are shipped. Remaining changes are copy and pacing
-fixes.
+![Scrubbing the timeline backwards through a plan death](docs/scrub.gif)
+
+**Project status: Shipped.** All three runs, the choice branches, and the
+finale are done. Remaining changes are copy and pacing fixes.
 
 **Why build this?** Most explanations of AI agents are either marketing or
 papers. I wanted the thing itself to be visible: the loop, the tool calls,
@@ -33,7 +34,7 @@ same timing skeleton, lesson, and verdict, so the same story can be watched
 as "what's in my fridge?" or as a failing test suite.
 
 **Motion is closed-form.** Springs are evaluated analytically at any `ms`
-(see `lib/anim.ts`), so scrubbing, playing, and jumping all produce the
+(see `lib/spring.ts`), so scrubbing, playing, and jumping all produce the
 exact same frames. The few wall-clock exceptions, such as text entrances,
 are documented where they live.
 
@@ -44,11 +45,11 @@ voice per beat.
 ## Development
 
 ```sh
-pnpm install
-pnpm dev        # http://localhost:3000
-pnpm test       # timeline + spring tests
-pnpm build
-pnpm smoke      # real-browser smoke test against a prod build
+npm install
+npm run dev     # http://localhost:3000
+npm test        # timeline + spring tests
+npm run build
+npm run smoke   # real-browser smoke test against a prod build
 ```
 
 Design notes live in [`docs/`](docs/), including the
