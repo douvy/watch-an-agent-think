@@ -50,7 +50,7 @@ export function Finale({
         <span className="label">finale</span>
         <span className="font-mono text-[10px] text-[#a9adb6]">3/3 runs</span>
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-center md:min-h-[320px] md:px-6">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-center md:min-h-[315px] md:px-6">
         {/* trophy pops on the stamp spring — the marquee twin wears the
             same crown, so the two surfaces celebrate in unison */}
         <span style={{ transform: `scale(${settle(ms, at + 550)})` }}>

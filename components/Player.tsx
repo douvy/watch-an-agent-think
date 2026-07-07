@@ -108,7 +108,7 @@ const CHAPTER_TONES: Record<string, string> = {
 // Fact 0, in the mascot's voice. "Press play" is the whole CTA — the h1
 // already promises the watching, so the tail would only echo it.
 const INTRO_NARRATION =
-  "I'm an AI agent — an AI in a loop with tools. Press play.";
+  "I'm an AI agent: an AI in a loop with tools. Press play.";
 
 function narrationOf(
   scenario: Scenario,
@@ -691,7 +691,7 @@ export function Player() {
             wearing the same check the finale receipt pays off: the
             promise at the door, the receipt on the way out. */}
         <p className="mx-auto mt-1.5 flex max-w-lg flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[15px] tracking-tight text-muted md:max-w-none">
-          Three things everyone should know about AI agents:
+          Three things to know about AI agents:
           {["how they work", "how they recover", "why they forget"].map(
             (t) => (
               <span
@@ -1003,7 +1003,7 @@ export function Player() {
                   : `${state.plans.length} plan${state.plans.length > 1 ? "s" : ""}`}
               </span>
             </div>
-            <div className="flex-1 space-y-5 p-4 md:min-h-[320px]">
+            <div className="flex-1 space-y-5 p-4 md:min-h-[315px]">
               {state.plans.map((plan, i) => (
                 <Plan
                   key={plan.planId}
@@ -1028,7 +1028,7 @@ export function Player() {
             </div>
             <div
               ref={streamRef}
-              className="max-h-[45vh] min-h-[180px] space-y-3 overflow-y-auto p-4 md:max-h-[320px] md:min-h-[320px]"
+              className="max-h-[45vh] min-h-[180px] space-y-3 overflow-y-auto p-4 md:max-h-[315px] md:min-h-[315px]"
             >
               {streamItems.map((it) =>
                 it.exitDelay !== undefined ? (
@@ -1181,11 +1181,11 @@ export function Player() {
               }
             }}
             disabled={blocked}
-            className="flex h-8 shrink-0 items-center gap-2 rounded-sm border-b-2 border-[#5fad74] bg-accent pr-1.5 pl-3 font-mono text-[12px] font-medium text-[#16181d] transition-colors enabled:hover:bg-[#5fad74] disabled:opacity-40"
+            className="flex h-8 shrink-0 items-center gap-2 rounded-sm border-b-2 border-[#5fad74] bg-accent px-2 font-mono text-[12px] font-medium text-[#16181d] transition-colors enabled:hover:bg-[#5fad74] disabled:opacity-40"
             aria-label={ended ? "replay" : playing ? "pause" : "play"}
           >
             {ended ? <RotateCcw size={13} /> : playing ? <Pause size={13} /> : <Play size={13} />}
-            {ended ? "replay" : playing ? "pause" : "play"}
+            {ended ? "Replay" : playing ? "Pause" : "Play"}
             {/* the shortcut rides inside the button, Zed style — no keyboard
                 on touch, so the chip stays desktop-only */}
             <kbd className="rounded-[3px] border border-[#16181d]/35 px-[5px] py-px text-[10px] leading-none max-md:hidden">

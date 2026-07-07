@@ -138,6 +138,32 @@ a {
   }
 }
 
+/* The table mascot's blink — he sits outside the timeline (furniture,
+   not state), so wall-clock CSS is the same sanctioned bend as the
+   twinkle. steps(1) keeps the discrete pixel-frame feel; two ~150ms
+   blinks at uneven spots in the cycle so it reads casual, not
+   metronomic. */
+@keyframes blink {
+  0%,
+  35.8%,
+  76.3%,
+  100% {
+    opacity: 1;
+  }
+  33.8%,
+  74.3% {
+    opacity: 0;
+  }
+}
+.blink {
+  animation: blink 7.4s steps(1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .blink {
+    animation: none;
+  }
+}
+
 /* House label style: tiny uppercase captions */
 .label {
   font-size: 10px;

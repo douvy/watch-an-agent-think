@@ -1,4 +1,4 @@
-import { CreatureBlueprint } from "@/components/Creature";
+import { CreatureGhost } from "@/components/Creature";
 import { Player } from "@/components/Player";
 
 // The hero is live: the mascot and the plain-English narration line derive
@@ -61,12 +61,12 @@ export default function Home() {
           }}
         />
         <Player />
-        {/* the sheet's title-block drawing — the mascot's own schematic on
-            the empty stretch of table below the machine, where a real
-            drafting sheet carries its part drawing. Normal flow (flex-1
+        {/* the mascot's flat twin on the empty stretch of table below the
+            machine — border-colored so he belongs to the page's line work,
+            blinking every few seconds so he's alive. Normal flow (flex-1
             absorbs the free space), so it can never sit under text. */}
         <div className="hidden flex-1 items-center justify-center py-4 md:flex">
-          <CreatureBlueprint scale={6} />
+          <CreatureGhost scale={6} />
         </div>
         <footer className="relative flex items-baseline justify-between px-5 py-4 md:px-10">
           {/* top rule runs full-bleed past the rails, matching the header —
@@ -95,6 +95,11 @@ export default function Home() {
             className="pointer-events-none absolute -top-[2px] z-10 hidden h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318] xl:block"
             style={{ right: "calc(-3rem - 3px)" }}
           />
+          {/* the disclosure — the site's one honesty line, same fact as the
+              meta description: nothing here is generated live */}
+          <span className="font-mono text-[11px] text-[#7b8290] max-sm:hidden">
+            Every run is a hand-written script. No model behind this page.
+          </span>
           <a
             href="https://github.com/douvy/how-agents-think"
             target="_blank"
