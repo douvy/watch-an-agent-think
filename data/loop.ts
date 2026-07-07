@@ -18,7 +18,7 @@ export const loop: Scenario = {
   durationMs: 57400,
   events: [
     { at: 0, tokensAfter: 600, type: "plan", planId: "p1",
-      narration: "First, a plan. I think in my head too. But if I don't write it down, it's gone.",
+      narration: "First, a plan. I think in my head too, but anything I don't write down is gone.",
       steps: [
       "Run the tests",
       "Read the failing test",
@@ -27,7 +27,7 @@ export const loop: Scenario = {
       "Verify green",
     ]},
     { at: 2800, tokensAfter: 620, type: "choice", choiceId: "loop-bug",
-      narration: "Before I start: you decide what's broken. My method won't change either way — that's the point.",
+      narration: "Before I start: you decide what's broken. My method stays the same either way.",
       prompt: "Pick the bug hiding in lib/utils.ts:",
       options: [
         { id: "date", label: "a date that won't parse" },
