@@ -6,7 +6,7 @@ window with a plan, tool calls, a memory gauge, and inner thoughts, on a
 timeline you can scrub like a video. Live at
 [howagentsthink.com](https://howagentsthink.com).
 
-![Scrubbing the timeline backwards through a plan death](docs/scrub.gif)
+![Watching a run play out in the player](docs/demo.gif)
 
 **Project status: Shipped.** All three runs, the choice branches, and the
 finale are done. Remaining changes are copy and pacing fixes.
