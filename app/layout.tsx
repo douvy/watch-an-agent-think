@@ -52,7 +52,9 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} ${plexSerif.variable} font-sans`}
       >
         <main className="min-h-screen">{children}</main>
-        <Analytics />
+        {/* Vercel-only: the insights script is served by their edge, so
+            local/CI builds would 404 it and fail the smoke run */}
+        {process.env.VERCEL === "1" && <Analytics />}
       </body>
     </html>
   );
