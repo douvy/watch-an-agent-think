@@ -12,7 +12,7 @@ import type { Scenario } from "@/lib/timeline";
 export const productive: Scenario = {
   id: "productive",
   title: "A Plan Fails",
-  task: "How can I make my day more productive?",
+  task: "I plan eight hours of work and get four. Figure out why.",
   lesson: "recovery means distrusting your plan",
   durationMs: 87500,
   events: [
@@ -20,7 +20,7 @@ export const productive: Scenario = {
       narration: "The days keep vanishing. I write a plan — but a plan is only my theory of the fix, written down.",
       steps: [
       "Look at a real day",
-      "Figure out the leak",
+      "Name what eats the time",
       "Build the fix",
       "Check a real day",
     ]},
@@ -33,7 +33,7 @@ export const productive: Scenario = {
     { at: 9800, tokensAfter: 1410, type: "step_done", planId: "p1", step: 0 },
     { at: 10500, tokensAfter: 1420, type: "step_active", planId: "p1", step: 1 },
     { at: 11900, tokensAfter: 1470, type: "thought",
-      text: "Four lost hours. A stricter schedule should squeeze them back." },
+      text: "Four lost hours. A tighter schedule should get them back." },
     { at: 14000, tokensAfter: 1480, type: "step_done", planId: "p1", step: 1 },
     { at: 14700, tokensAfter: 1490, type: "step_active", planId: "p1", step: 2 },
     { at: 16100, tokensAfter: 1540, type: "tool_call", id: "t2", tool: "do",
@@ -83,7 +83,7 @@ export const productive: Scenario = {
       narration: "New plan, built differently — every step starts from where the hours actually went, not a theory.",
       steps: [
       "Trace where hours go",
-      "Find the real leak",
+      "Find the real cause",
       "Fix that instead",
       "Check a real day",
     ]},
@@ -91,7 +91,7 @@ export const productive: Scenario = {
     { at: 48300, tokensAfter: 3000, type: "tool_call", id: "t4", tool: "read", input: "the phone's screen-time report",
       why: "follow the hours instead of guessing at them" },
     { at: 52500, tokensAfter: 3750, type: "tool_result", callId: "t4", ok: false,
-      narration: "There it is — four hours of phone. The evidence was always there; my theory kept me from looking.",
+      narration: "There it is — almost four hours of phone. The evidence was always there; my theory kept me from looking.",
       output: "3 hr 41 min of phone yesterday — most of it midday" },
     { at: 54600, tokensAfter: 3760, type: "step_done", planId: "p2", step: 0 },
     { at: 55300, tokensAfter: 3770, type: "step_active", planId: "p2", step: 1 },
@@ -103,7 +103,7 @@ export const productive: Scenario = {
       why: "understand the cause before designing the fix" },
     { at: 65800, tokensAfter: 4600, type: "tool_result", callId: "t5", ok: true,
       narration: "It eats the middle of the day.",
-      output: "worst stretch is 11am–2pm — right where the deep work sat" },
+      output: "worst stretch is 11am–2pm — the middle of the work day" },
     { at: 68600, tokensAfter: 4650, type: "tool_call", id: "t6", tool: "do",
       why: "move the phone, not the blocks",
       input: "phone in another room until 2pm, one check at lunch" },
