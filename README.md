@@ -14,16 +14,16 @@ finale are done. Remaining changes are copy and pacing fixes.
 **Why build this?** Most explanations of AI agents are either marketing
 or papers. I wanted the thing itself to be visible: the loop, the tool
 calls, the memory filling up, the plan dying and getting rebuilt. One run
-takes about a minute and teaches one true thing. All three teach the real
+takes about a minute and teaches one true thing. All three teach some
 vocabulary: agent, tool, agentic loop, hallucination, context window,
 compacting.
 
 **Why is the whole UI a pure function of time?** Everything on screen
-renders from `stateAt(scenario, ms, choices)`, with no accumulated
-animation state anywhere. Every other design decision falls out of this
-one: scrub to any millisecond and the screen is correct, and dragging
-backward is real. The later agent doesn't exist yet, including the
-ending.
+renders from `stateAt(scenario, ms, choices)`. Nothing accumulates
+between frames. That one decision carries the whole site: you can scrub
+to any millisecond and the screen is right, and dragging backward
+actually rewinds the run. The later agent doesn't exist yet, including
+the ending.
 
 ## How it works
 
