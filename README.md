@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# How Agents Think
 
-## Getting Started
+How Agents Think is a single-page site that teaches how AI agents work by
+letting you watch one think. Three hand-scripted agent runs play out inside
+a terminal-style window with a plan, tool calls, a memory gauge, and inner
+thoughts, all on a timeline you can scrub like a video. It is live at
+[howagentsthink.com](https://howagentsthink.com).
 
-First, run the development server:
+**Project status: Done, being polished.** All three runs, the choice
+branches, and the finale are shipped. Remaining changes are copy and pacing
+fixes.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Why build this?** Most explanations of AI agents are either marketing or
+papers. I wanted the thing itself to be visible: the loop, the tool calls,
+the memory filling up, the plan dying and getting rebuilt. After one run
+(about a minute) you can tell another person one true thing about how
+agents work. After all three you know the real vocabulary: agent, tool,
+agentic loop, hallucination, context window, compacting.
+
+**Why is the whole UI a pure function of time?** Everything on screen
+renders from `stateAt(scenario, ms, choices)`. There is no accumulated
+animation state anywhere. This is the design decision the rest of the site
+falls out of: the timeline can be scrubbed to any millisecond and the
+screen is always correct, and dragging backward is real. The later agent
+doesn't exist yet, including the ending.
+
+## How it works
+
+**Runs are data, not recordings.** Each run is a hand-written script in
+`data/*.ts`, a list of timestamped events (plan, tool_call, thought,
+choice, compact, done). Every everyday run has a code twin that shares the
+same timing skeleton, lesson, and verdict, so the same story can be watched
+as "what's in my fridge?" or as a failing test suite.
+
+**Motion is closed-form.** Springs are evaluated analytically at any `ms`
+(see `lib/anim.ts`), so scrubbing, playing, and jumping all produce the
+exact same frames. The few wall-clock exceptions, such as text entrances,
+are documented where they live.
+
+**The scripts are tested.** `lib/timeline.test.ts` enforces the mechanics:
+narration length caps, token budgets, twin symmetry, branch integrity, one
+voice per beat.
+
+## Development
+
+```sh
+pnpm install
+pnpm dev        # http://localhost:3000
+pnpm test       # timeline + spring tests
+pnpm build
+pnpm smoke      # real-browser smoke test against a prod build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Design notes live in [`docs/`](docs/), including the
+[curriculum](docs/curriculum.md), which lists the facts the site teaches
+and the rules every line of copy has to pass.
