@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, IBM_Plex_Serif } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -51,6 +52,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} ${plexSerif.variable} font-sans`}
       >
         <main className="min-h-screen">{children}</main>
+        <Analytics />
       </body>
     </html>
   );
