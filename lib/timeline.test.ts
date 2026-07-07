@@ -274,6 +274,27 @@ test("every run ends with a short, concrete takeaway", () => {
   }
 });
 
+// The vocabulary promise, enforced: the README and curriculum promise the
+// viewer walks away owning the words, and rule 3 (show the thing, then
+// name it) means each run must literally say its terms. Run 2 promises no
+// new vocab — its lesson is a mechanic, not a word — so it has no row.
+// Terms live in narrations and thoughts; branches may duplicate them, but
+// every twin's script must contain each of its terms somewhere.
+test("every run names the vocabulary it promises", () => {
+  const promises = [
+    [[loop, fridge], ["agentic loop", "hallucination"]],
+    [[pressure, apartments], ["context window", "compacting"]],
+  ] as const;
+  for (const [runs, terms] of promises) {
+    for (const sc of runs) {
+      const text = JSON.stringify(sc.events).toLowerCase();
+      for (const term of terms) {
+        assert.ok(text.includes(term), `${sc.id} never says "${term}"`);
+      }
+    }
+  }
+});
+
 test("every branch tag names a real choice and option", () => {
   for (const sc of all) {
     for (const e of sc.events) {

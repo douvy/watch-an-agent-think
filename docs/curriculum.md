@@ -20,11 +20,20 @@ style with no fact, cut it. If the fact needs decoding, rewrite it.
 
 Eleven facts, plus two meta-facts. Each is true — nothing here would make an
 Anthropic researcher wince. Fact 4 is backed by published interpretability
-research (the "known answer" circuit misfiring; confabulation feeling
-identical to recall from the inside). Fact 2 and the meta-facts are worded
+research (the "known answer" circuit misfiring). One caveat, made knowingly:
+the research licenses "indistinguishable to the model"; the script says
+"feel identical to me" — a word of phenomenology the papers don't claim.
+The dinner-table test won that fight, and the line stays in the mascot's
+first person so it reads as self-report, not finding. Fact 2 and the
+meta-facts are worded
 around the global-workspace finding (2026): models do think in internal
 activations without writing anything down, so we never claim "the text is
 the thinking" or "nothing is hidden" — only that writing is what survives.
+
+The table wording below is shorthand for this doc, not script copy. The
+lines that ship live in `data/*.ts` and pass the register rules; where a
+fact reads like an aphorism here ("forgetting well is a skill"), the
+script states it flat or not at all.
 
 ### Run 1 — The Loop (loop.ts / fridge.ts)
 
@@ -115,7 +124,8 @@ education-team roundtable, the IBM agents explainer):
 
 - Facts 0–12 — delivered in current scripts (term-naming pass applied:
   agentic loop, hallucination, context window, compacting; fact 0 is the
-  intro line).
+  intro line). Term naming is CI-enforced: lib/timeline.test.ts fails if
+  a run's script stops literally saying its promised words.
 - M1, M2 — delivered by the finale takeover (components/Finale.tsx): it
   states them, and its exit *is* the scrub-back.
 - Vocab recall — the takeover's "words you now own" row repeats all six
