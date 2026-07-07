@@ -62,7 +62,7 @@ try {
 
   // 2. Deep link to the first gate wall — the choice card must be live.
   await page.goto(`${BASE}/?s=1&t=3.6`);
-  const gate = page.getByRole("button", { name: "Nashville hot chicken" });
+  const gate = page.getByRole("button", { name: "nashville hot chicken" });
   await gate.waitFor({ timeout: 10_000 });
   ok("deep link lands on the opening gate");
 

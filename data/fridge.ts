@@ -30,7 +30,7 @@ export const fridge: Scenario = {
       narration: "Dinner is your call, not mine. Decisions like this are yours, so I stop and ask.",
       prompt: "Pick tonight's dinner:",
       options: [
-        { id: "hotchicken", label: "Nashville hot chicken" },
+        { id: "hotchicken", label: "nashville hot chicken" },
         { id: "pancakes", label: "honey butter pancakes" },
       ]},
     { at: 4200, tokensAfter: 630, type: "step_active", planId: "p1", step: 0 },

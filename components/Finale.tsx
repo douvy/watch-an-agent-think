@@ -79,9 +79,9 @@ export function Finale({
           ))}
         </div>
         {/* the vocab receipt — same chip anatomy as the masthead's
-            syllabus chips, minus the checks: words are owned, not done */}
+            syllabus chips, minus the checks: words are known, not done */}
         <div style={enterStyle(ms, at + 1140)} className="mt-5">
-          <div className="label mb-2">words you now own</div>
+          <div className="label mb-2">words you now know</div>
           <div className="flex max-w-[26rem] flex-wrap items-center justify-center gap-1.5">
             {VOCAB.map((w) => (
               <span

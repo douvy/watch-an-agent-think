@@ -53,8 +53,8 @@ function moodOf(state: TimelineState, ms: number): Mood {
   return "idle";
 }
 
-// The finale face — the trilogy-complete payoff. Arms up, star eyes, a
-// crown, sparkles. The pose is static (this only renders while the clock
+// The finale face — the trilogy-complete payoff. Arms up, pit vipers on,
+// a crown, sparkles. The pose is static (this only renders while the clock
 // is parked at an end frame, where f(ms) motion would freeze); the
 // sparkles twinkle on a CSS steps() beat — see globals.css — so the
 // pixels still move frame-by-frame, never ease.
@@ -108,14 +108,31 @@ export function CreatureTriumph({ size = 44 }: { size?: number }) {
         <rect x="12" y="12" width="2" height="1" />
       </g>
       <rect x="3" y="5" width="10" height="4" fill={PATCH} />
-      {/* star eyes — plus-shaped, the pixel idiom for delight */}
-      <g fill={GREEN}>
-        <rect x="6" y="5" width="1" height="1" />
-        <rect x="5" y="6" width="3" height="1" />
-        <rect x="6" y="7" width="1" height="1" />
-        <rect x="10" y="5" width="1" height="1" />
-        <rect x="9" y="6" width="3" height="1" />
-        <rect x="10" y="7" width="1" height="1" />
+      {/* pit vipers — the trophy shades. Black frame bar, rainbow mirror
+          lens banding in to the hot orange core, nose notch, and end caps
+          a pixel past the head on each side: they wrap, that's the brand.
+          One white glint rides the sparkles' twinkle beat. */}
+      <g>
+        <rect x="1" y="5" width="14" height="1" fill="#16181d" />
+        <rect x="0" y="6" width="1" height="1" fill="#16181d" />
+        <rect x="15" y="6" width="1" height="1" fill="#16181d" />
+        <rect x="1" y="6" width="1" height="2" fill="#4f9cf0" />
+        <rect x="14" y="6" width="1" height="2" fill="#4f9cf0" />
+        <rect x="2" y="6" width="1" height="2" fill={GREEN} />
+        <rect x="13" y="6" width="1" height="2" fill={GREEN} />
+        <rect x="3" y="6" width="1" height="2" fill="#ffce3f" />
+        <rect x="12" y="6" width="1" height="2" fill="#ffce3f" />
+        <rect x="4" y="6" width="8" height="2" fill="#ff7a1e" />
+        <rect x="6" y="6" width="4" height="2" fill="#e04616" />
+        <rect x="7" y="7" width="2" height="1" fill="#16181d" />
+        <rect
+          className="twinkle-late"
+          x="11"
+          y="6"
+          width="1"
+          height="1"
+          fill="#ffffff"
+        />
       </g>
       <rect x="6" y="8" width="4" height="1" fill={BODY} />
     </svg>
