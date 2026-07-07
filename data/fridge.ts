@@ -18,7 +18,7 @@ export const fridge: Scenario = {
   durationMs: 57400,
   events: [
     { at: 0, tokensAfter: 600, type: "plan", planId: "p1",
-      narration: "First, a plan. I think in my head too. But if I don't write it down, it's gone.",
+      narration: "First, a plan. I think in my head too, but anything I don't write down is gone.",
       steps: [
       "Pick the dish",
       "See what's actually here",
@@ -27,7 +27,7 @@ export const fridge: Scenario = {
       "Final check, then cook",
     ]},
     { at: 2800, tokensAfter: 620, type: "choice", choiceId: "fridge-dinner",
-      narration: "Tonight's dish is your call, not mine — when a decision belongs to the human, I stop and ask.",
+      narration: "Dinner is your call, not mine. Decisions like this are yours, so I stop and ask.",
       prompt: "Pick tonight's dinner:",
       options: [
         { id: "hotchicken", label: "Nashville hot chicken" },
@@ -53,7 +53,7 @@ export const fridge: Scenario = {
     { at: 10500, tokensAfter: 1280, type: "step_done", planId: "p1", step: 0 },
     { at: 11200, tokensAfter: 1290, type: "step_active", planId: "p1", step: 1 },
     { at: 12600, tokensAfter: 1330, type: "thought",
-      text: "Missing one thing isn't a dead end. What's actually in there?" },
+      text: "One missing ingredient doesn't cancel dinner. What's actually in there?" },
     { at: 15400, tokensAfter: 1370, type: "tool_call", id: "t2", tool: "look", input: "the fridge and the pantry",
       why: "check what's real before deciding anything" },
     { at: 18200, tokensAfter: 2020, type: "tool_result", callId: "t2", ok: true,
@@ -62,7 +62,7 @@ export const fridge: Scenario = {
     { at: 20300, tokensAfter: 2030, type: "step_done", planId: "p1", step: 1 },
     { at: 21000, tokensAfter: 2040, type: "step_active", planId: "p1", step: 2 },
     { at: 22400, tokensAfter: 2080, type: "thought",
-      text: "The dish survives the shelf — except the buttermilk. One gap to close." },
+      text: "Everything the recipe needs is here except the buttermilk. One thing to solve." },
     { at: 25900, tokensAfter: 2120, type: "tool_call", id: "t3", tool: "read", input: "buttermilk stand-ins",
       why: "confirm the swap instead of hoping" },
     { at: 28000, tokensAfter: 2670, type: "tool_result", callId: "t3", ok: true,
