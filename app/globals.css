@@ -87,6 +87,13 @@ a {
   touch-action: manipulation;
 }
 
+/* Tailwind 4's reset leaves buttons at cursor: default — every enabled
+   button here is clickable, so they all get the pointer */
+button:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+
 /* The storyteller's entrance — the marquee line changes only while the
    clock is parked (chapter dwells, gates), where f(ms) motion would
    freeze mid-fade. Wall-clock CSS is the same sanctioned bend as the
