@@ -164,6 +164,144 @@ a {
   }
 }
 
+/* The table mascot's bobble — twice in an 11s cycle he hops sideways:
+   an airborne frame held long enough to read floaty, a landing shifted
+   off-center and rotated a few degrees about his feet (the far foot
+   leaves the baseline — he's leaning on one leg), a beat of holding the
+   lean, then the same hop home. Out of phase with the 7.4s blink so the
+   two never sync into a routine. Same wall-clock steps(1) bend as the
+   blink: discrete pixel frames, furniture time, not timeline time. */
+@keyframes bobble {
+  0%,
+  46.1%,
+  86.9%,
+  100% {
+    transform: none;
+  }
+  36.2%,
+  43.5% {
+    transform: translate(3px, -6px);
+  }
+  38.8% {
+    transform: translate(5px, -2px) rotate(4deg);
+  }
+  77.1%,
+  84.3% {
+    transform: translate(-3px, -6px);
+  }
+  79.7% {
+    transform: translate(-5px, -2px) rotate(-4deg);
+  }
+}
+.bobble {
+  animation: bobble 11s steps(1) infinite;
+  /* rotate about his feet, so the lean pivots on the planted leg */
+  transform-origin: 50% 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bobble {
+    animation: none;
+  }
+}
+
+/* The table mascot's backflip — click him and he does one. A crouch,
+   three airborne frames turning in 90° steps (right angles keep the
+   crisp pixel edges crisp), and the landing. Same wall-clock steps(1)
+   bend as his bobble: he's furniture, not timeline state. The class
+   replaces .bobble for the flip's duration (see CreatureGhost). */
+@keyframes backflip {
+  0% {
+    transform: translateY(2px);
+  }
+  18% {
+    transform: translateY(-14px) rotate(-90deg);
+  }
+  38% {
+    transform: translateY(-20px) rotate(-180deg);
+  }
+  58% {
+    transform: translateY(-14px) rotate(-270deg);
+  }
+  78%,
+  100% {
+    transform: translateY(0) rotate(-360deg);
+  }
+}
+.backflip {
+  animation: backflip 0.9s steps(1);
+  /* spin about his center — the flip is in the air, not on a foot */
+  transform-origin: 50% 50%;
+}
+
+/* The table mascot's coffee — the other click trick, alternating with
+   the backflip. A cup appears in his hand, comes up to his mouth, tips
+   twice for two sips with his eyes shut, then goes back to the hand and
+   away. The cup group only exists while the trick runs (see
+   CreatureGhost); same wall-clock steps(1) bend as everything else he
+   does. The cup is drawn at the mouth position; the keyframes carry it
+   out to the hand and tip it. */
+@keyframes cheers-cup {
+  0%,
+  72% {
+    transform: translate(7px, -1px); /* in his resting hand */
+  }
+  12%,
+  38%,
+  60% {
+    transform: none; /* held at the mouth */
+  }
+  26%,
+  48% {
+    transform: translate(0, -0.5px) rotate(-24deg); /* the sip */
+  }
+}
+/* the cup's exit — back in the hand, then it dematerializes. The one
+   smooth ramp in his repertoire: a hard unmount read as a glitch, and
+   props can fade even if pixels can't. */
+@keyframes cheers-fade {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+.cheers-cup {
+  animation:
+    cheers-cup 2.8s steps(1),
+    cheers-fade 2.8s linear;
+  /* tip about the cup itself, not the svg */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+/* the drinking pose — while the cup is up, the rest arm leaves, a
+   raised arm holds the cup at his mouth, and his eyes shut. One
+   opacity toggle on the whole pose, timed to the cup's trip. */
+@keyframes cheers-hold {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  72%,
+  100% {
+    opacity: 0;
+  }
+}
+.cheers-hold {
+  animation: cheers-hold 2.8s steps(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .backflip,
+  .cheers-cup,
+  .cheers-shut {
+    animation: none;
+  }
+}
+
 /* House label style: tiny uppercase captions */
 .label {
   font-size: 10px;

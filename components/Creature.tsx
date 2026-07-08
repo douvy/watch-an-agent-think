@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { CONTEXT_BUDGET, type TimelineState } from "@/lib/timeline";
 
 // The agent's face. Every frame is a pure function of (state, ms) —
@@ -139,15 +142,20 @@ export function CreatureTriumph({ size = 44 }: { size?: number }) {
   );
 }
 
-// The table mascot — the sprite's flat twin on the empty stretch of
-// drafting table under the terminal. One fill, a couple steps above the
-// table (#111318), so he reads as a shadow in the page's line work
-// rather than a second live character. Eyes are punched out in the
-// table color, and he blinks every few seconds — wall-clock CSS (see
-// .blink in globals.css), the same sanctioned bend as the twinkle: he
-// lives on the table, not on the timeline.
+// The table mascot — the live sprite itself, at rest, pinned on the
+// drafting grid under the terminal. Not a blueprint abstraction: same
+// body, face patch, and green eyes as the player's creature, at figure
+// scale — the construction lines around him carry the drafted look, the
+// figure stays true. He blinks, twice a cycle hops sideways and leans
+// on one foot, and clicks alternate two tricks: a backflip, then a
+// coffee raised to you — all wall-clock CSS (see .blink/.bobble/
+// .backflip/.cheers-* in globals.css), the same sanctioned bend as the
+// twinkle: he lives on the table, not on the timeline. The flip class
+// replaces the bobble for its 0.9s; the coffee rides along inside the
+// svg, so he keeps bobbling while he drinks.
 export function CreatureGhost({ scale = 6 }: { scale?: number }) {
-  const TABLE = "#111318"; // the table fill from page.tsx, not --background
+  const [trick, setTrick] = useState<"backflip" | "cheers" | null>(null);
+  const [clicks, setClicks] = useState(0);
   return (
     <svg
       width={16 * scale}
@@ -155,8 +163,25 @@ export function CreatureGhost({ scale = 6 }: { scale?: number }) {
       viewBox="0 1 16 12"
       shapeRendering="crispEdges"
       aria-hidden
+      className={`cursor-pointer ${trick === "backflip" ? "backflip" : "bobble"}`}
+      onClick={() => {
+        if (trick) return; // let the current trick finish
+        // no animation under reduced motion means no animationend to
+        // clear the trick — skip the easter egg entirely
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+          return;
+        setTrick(clicks % 2 ? "cheers" : "backflip");
+        setClicks(clicks + 1);
+      }}
+      // blink's animationend bubbles up from the eyes — only a trick
+      // ending should hand the element back to the bobble
+      onAnimationEnd={(e) => {
+        if (e.animationName === "backflip" || e.animationName === "cheers-cup")
+          setTrick(null);
+      }}
     >
-      <g fill="#22252c">
+      {/* the at-rest frame — same cells as the live sprite in idle */}
+      <g fill={BODY}>
         {/* ears */}
         <rect x="3" y="1" width="1" height="1" />
         <rect x="3" y="2" width="2" height="1" />
@@ -175,9 +200,10 @@ export function CreatureGhost({ scale = 6 }: { scale?: number }) {
         <rect x="9" y="12" width="2" height="1" />
         <rect x="12" y="12" width="2" height="1" />
       </g>
-      {/* eyes — open is two rows, closed is the bottom row alone (the
-          live sprite's blink frame). Only the top row animates. */}
-      <g fill={TABLE}>
+      <rect x="3" y="5" width="10" height="4" fill={PATCH} />
+      {/* eyes — open is two rows; the blink drops the top row, leaving
+          the live sprite's half-closed frame */}
+      <g fill={GREEN}>
         <rect x="5" y="7" width="2" height="1" />
         <rect x="9" y="7" width="2" height="1" />
         <g className="blink">
@@ -185,6 +211,46 @@ export function CreatureGhost({ scale = 6 }: { scale?: number }) {
           <rect x="9" y="6" width="2" height="1" />
         </g>
       </g>
+      {/* the coffee trick — cup in the human's warm paper (it came from
+          you), drawn at the mouth and carried out to his hand by the
+          keyframes; steam reuses the twinkle beat and rides with the
+          cup. Mounted only while the trick runs. */}
+      {trick === "cheers" && (
+        <>
+          {/* the drinking pose — one toggle: rest arm covered in the
+              table fill, a raised arm reaching across to the cup, eyes
+              shut. Synced to the cup's trip by .cheers-hold. */}
+          <g className="cheers-hold">
+            <rect x="14" y="6" width="2" height="3" fill="#111318" />
+            <rect x="14" y="7" width="1.5" height="1.5" fill={BODY} />
+            <rect x="9" y="8" width="5" height="1" fill={BODY} />
+            <rect x="5" y="6" width="2" height="2" fill={PATCH} />
+            <rect x="9" y="6" width="2" height="2" fill={PATCH} />
+          </g>
+          <g className="cheers-cup">
+            <g fill="#eceae0">
+              <rect x="7" y="7.5" width="2" height="1.5" />
+              <rect x="6.5" y="7.75" width="0.5" height="1" />
+            </g>
+            <g fill={DOT}>
+              <rect
+                className="twinkle"
+                x="7.25"
+                y="6.5"
+                width="0.5"
+                height="0.5"
+              />
+              <rect
+                className="twinkle-late"
+                x="8.5"
+                y="6.75"
+                width="0.5"
+                height="0.5"
+              />
+            </g>
+          </g>
+        </>
+      )}
     </svg>
   );
 }

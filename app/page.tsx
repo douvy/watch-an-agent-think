@@ -67,12 +67,65 @@ export default function Home() {
           }}
         />
         <Player />
-        {/* the mascot's flat twin on the empty stretch of table below the
-            machine — border-colored so he belongs to the page's line work,
-            blinking every few seconds so he's alive. Normal flow (flex-1
-            absorbs the free space), so it can never sit under text. */}
-        <div className="hidden flex-1 items-center justify-center py-4 md:flex">
-          <CreatureGhost scale={6} />
+        {/* the mascot himself, at rest and figure-scale, on the empty
+            stretch of table below the machine — drafted, not placed:
+            stitched construction lines
+            overshoot his bounding box on all four sides (the ACP-page move
+            from the Zed refs — the mark drawn on its grid), the same
+            bordered rivet at each corner crossing, and a draftsman's note
+            off the bottom-right. He blinks every few seconds so he's
+            alive. Normal flow (flex-1 absorbs the free space), so the
+            figure can never sit under text; py-10 guarantees room for the
+            32px overshoot on short screens. */}
+        <div className="hidden flex-1 items-center justify-center py-10 md:flex">
+          <div className="relative">
+            {/* horizontal construction lines along his top and bottom edges */}
+            {["top-0", "bottom-0"].map((edge) => (
+              <span
+                key={edge}
+                aria-hidden
+                className={`pointer-events-none absolute ${edge} -left-8 -right-8 h-px`}
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(to right, #232323 0 3px, transparent 3px 8px)",
+                }}
+              />
+            ))}
+            {/* vertical construction lines along his left and right edges */}
+            {["left-0", "right-0"].map((edge) => (
+              <span
+                key={edge}
+                aria-hidden
+                className={`pointer-events-none absolute ${edge} -top-8 -bottom-8 w-px`}
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(to bottom, #232323 0 3px, transparent 3px 8px)",
+                }}
+              />
+            ))}
+            {/* the corner crossings carry the page's rivet — no exceptions */}
+            {[
+              "-top-[2px] -left-[2px]",
+              "-top-[2px] -right-[2px]",
+              "-bottom-[2px] -left-[2px]",
+              "-bottom-[2px] -right-[2px]",
+            ].map((pos) => (
+              <span
+                key={pos}
+                aria-hidden
+                className={`pointer-events-none absolute ${pos} z-10 h-[4px] w-[4px] border border-[#3a3f4a] bg-[#111318]`}
+              />
+            ))}
+            {/* the draftsman's note — a drawing with a label was labeled
+                by someone; same claim as the footer, in drafting register */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute bottom-0 left-full ml-4 font-mono text-[10px] whitespace-nowrap text-[#7b8290]"
+            >
+              fig. 01
+            </span>
+            <CreatureGhost scale={6} />
+          </div>
         </div>
         <footer className="relative flex items-baseline justify-between px-5 py-4 md:px-10">
           {/* top rule runs full-bleed past the rails, matching the header —
