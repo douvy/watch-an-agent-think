@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { CreatureGhost } from "@/components/Creature";
 import { Player } from "@/components/Player";
+
+// The player rewrites the URL with ?s=&t= while paused (deep links), so
+// shared frame-links must all resolve to the one canonical page.
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 // The hero is live: the mascot and the plain-English narration line derive
 // from the same (scenario, ms) as the player window, so Player renders both
@@ -98,7 +104,14 @@ export default function Home() {
           {/* the disclosure — the site's one honesty line, same fact as the
               meta description: nothing here is generated live */}
           <span className="font-mono text-[11px] text-[#7b8290] max-sm:hidden">
-            Every run is a hand-written script. No model behind this page.
+            Every run is a{" "}
+            <Link
+              href="/runs/loop"
+              className="underline decoration-white/20 underline-offset-2 hover:text-header-text hover:decoration-white"
+            >
+              hand-written script
+            </Link>
+            ; no model.
           </span>
           <a
             href="https://github.com/douvy/how-agents-think"
