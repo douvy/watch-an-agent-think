@@ -23,7 +23,7 @@ const plexSerif = IBM_Plex_Serif({
 });
 
 const description =
-  "Three agent runs on a scrubbable timeline: planning, tool calls, failure, recovery, context pressure. No model behind this page; every run is a hand-written script.";
+  "How AI agents work, shown as three runs on a scrubbable timeline: planning, tool calls, failure, recovery, context pressure. No model behind this page; every run is a hand-written script.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://howagentsthink.com"),
